@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const slideLinks = [
   { href: '/', label: '재무제표 분석 시작' },
@@ -24,10 +24,12 @@ const slideLinks = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { companies, loadCompanyList, loadCompany, companyData, apiKey, setApiKey } = useCompanyStore();
+  const { companies, loadCompanyList, loadCompany, companyData, apiKey, setApiKey, dartApiKey, setDartApiKey } = useCompanyStore();
+  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
+    fetch('/api/config').then(r => r.json()).then(setEnvKeys).catch(() => {});
   }, [loadCompanyList]);
 
   return (
@@ -41,16 +43,36 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* API Key */}
-      <div className="p-4 border-b border-gray-200">
-        <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-..."
-          className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-        />
+      {/* API Keys */}
+      <div className="p-4 border-b border-gray-200 space-y-3">
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
+          {envKeys?.anthropicKeySet ? (
+            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+          ) : (
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          )}
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">DART API Key</label>
+          {envKeys?.dartKeySet ? (
+            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+          ) : (
+            <input
+              type="password"
+              value={dartApiKey}
+              onChange={(e) => setDartApiKey(e.target.value)}
+              placeholder="DART API Key"
+              className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          )}
+        </div>
       </div>
 
       {/* Company Select */}

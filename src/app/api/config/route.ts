@@ -1,0 +1,8 @@
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  return NextResponse.json({
+    anthropicKeySet: !!process.env.ANTHROPIC_API_KEY,
+    dartKeySet: !!process.env.DART_API_KEY,
+  });
+}
