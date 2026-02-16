@@ -4,22 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
 import { useEffect, useState } from 'react';
+import { navOnlyItems, reportSlides } from '@/lib/slide-config';
 
 const slideLinks = [
-  { href: '/', label: '재무제표 분석 시작' },
-  { href: '/dart', label: 'DART 재무제표 데이터' },
-  { href: '/summary', label: '요약' },
-  { href: '/income-statement', label: '손익계산서' },
-  { href: '/balance-sheet', label: '재무상태표' },
-  { href: '/growth-rate', label: '성장성 분석' },
-  { href: '/profitability', label: '수익성 분석' },
-  { href: '/stability', label: '안정성 분석' },
-  { href: '/cash-flow', label: '현금흐름표' },
-  { href: '/working-capital', label: '운전자본 분석' },
-  { href: '/industry-comparison', label: '업계비교 현황' },
-  { href: '/conclusion', label: '종합 결론' },
-  { href: '/valuation', label: '가치 평가' },
-  { href: '/valuation-manual', label: '가치 평가(검증)' },
+  ...navOnlyItems,
+  ...reportSlides.map((s) => ({ href: `/${s.id}`, label: s.label })),
 ];
 
 const AI_KEY_LABELS: Record<string, { label: string; envField: 'anthropicKeySet' | 'openaiKeySet' | 'geminiKeySet' | 'deepseekKeySet' }> = {
