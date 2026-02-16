@@ -27,12 +27,29 @@ export async function downloadPdf(
   const date = new Date().toLocaleDateString('ko-KR');
   const headerText = `${options.companyName} | ${date}`;
 
-  let yOffset = margin + 2;
+  // 한글 헤더를 Canvas API로 렌더링 (jsPDF 기본 폰트는 한글 미지원)
+  const headerCanvas = document.createElement('canvas');
+  const headerScale = 4;
+  const headerWidthPx = Math.round(contentWidth * headerScale * 3.78); // mm → px
+  const headerHeightPx = 24 * headerScale;
+  headerCanvas.width = headerWidthPx;
+  headerCanvas.height = headerHeightPx;
+  const hctx = headerCanvas.getContext('2d')!;
+  hctx.fillStyle = '#ffffff';
+  hctx.fillRect(0, 0, headerWidthPx, headerHeightPx);
+  hctx.font = `${10 * headerScale}px "Noto Sans KR", sans-serif`;
+  hctx.fillStyle = '#666666';
+  hctx.textBaseline = 'middle';
+  hctx.fillText(headerText, 0, headerHeightPx / 2);
+  const headerImg = headerCanvas.toDataURL('image/png');
+  const headerMmHeight = 6;
+
+  let yOffset = margin + headerMmHeight;
   let remainingHeight = imgHeight;
   let sourceY = 0;
 
   while (remainingHeight > 0) {
-    const availableHeight = pageHeight - margin * 2 - 2;
+    const availableHeight = pageHeight - margin * 2 - headerMmHeight;
     const drawHeight = Math.min(remainingHeight, availableHeight);
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width = canvas.width;
@@ -49,9 +66,7 @@ export async function downloadPdf(
       pdf.addPage();
     }
 
-    pdf.setFontSize(10);
-    pdf.setTextColor(100);
-    pdf.text(headerText, margin, 7);
+    pdf.addImage(headerImg, 'PNG', margin, margin, contentWidth, headerMmHeight);
     pdf.addImage(sliceData, 'PNG', margin, yOffset, contentWidth, drawHeight);
 
     sourceY += sliceCanvas.height;
