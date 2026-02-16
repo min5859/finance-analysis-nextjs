@@ -22,16 +22,17 @@ const slideLinks = [
   { href: '/valuation-manual', label: '가치 평가(검증)' },
 ];
 
-const AI_KEY_LABELS: Record<string, { label: string; envField: 'anthropicKeySet' | 'openaiKeySet' | 'deepseekKeySet' }> = {
+const AI_KEY_LABELS: Record<string, { label: string; envField: 'anthropicKeySet' | 'openaiKeySet' | 'geminiKeySet' | 'deepseekKeySet' }> = {
   anthropic: { label: 'Anthropic API Key', envField: 'anthropicKeySet' },
   openai: { label: 'OpenAI API Key', envField: 'openaiKeySet' },
+  gemini: { label: 'Gemini API Key', envField: 'geminiKeySet' },
   deepseek: { label: 'DeepSeek API Key', envField: 'deepseekKeySet' },
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { companies, loadCompanyList, loadCompany, companyData, aiProvider, setAiProvider } = useCompanyStore();
-  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; openaiKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
+  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; openaiKeySet: boolean; geminiKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
@@ -57,11 +58,12 @@ export default function Sidebar() {
           <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
           <select
             value={aiProvider}
-            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'deepseek')}
+            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'gemini' | 'deepseek')}
             className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="anthropic">Anthropic (Claude)</option>
             <option value="openai">OpenAI (GPT)</option>
+            <option value="gemini">Google (Gemini)</option>
             <option value="deepseek">DeepSeek</option>
           </select>
         </div>

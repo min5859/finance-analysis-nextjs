@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { CompanyFinancialData, CompanyListItem } from '@/types/company';
 import type { ValuationResult } from '@/types/valuation';
 
-type AIProvider = 'anthropic' | 'openai' | 'deepseek';
+type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'deepseek';
 
 interface CompanyStore {
   companyData: CompanyFinancialData | null;

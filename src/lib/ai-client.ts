@@ -2,14 +2,21 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 
-export type AIProvider = 'anthropic' | 'openai' | 'deepseek';
+export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'deepseek';
 
 export const MAX_INPUT_CHARS = 20_000;
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
   anthropic: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
   openai: 'gpt-4o',
+  gemini: 'gemini-2.0-flash',
   deepseek: 'deepseek-chat',
+};
+
+const OPENAI_COMPATIBLE_CONFIG: Record<string, { envVar: string; baseURL?: string }> = {
+  openai: { envVar: 'OPENAI_API_KEY' },
+  gemini: { envVar: 'GEMINI_API_KEY', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' },
+  deepseek: { envVar: 'DEEPSEEK_API_KEY', baseURL: 'https://api.deepseek.com' },
 };
 
 interface ChatCompletionParams {
@@ -48,16 +55,16 @@ export async function chatCompletion({
     return { text: content.type === 'text' ? content.text : '', error: null };
   }
 
-  // OpenAI & DeepSeek (both OpenAI-compatible)
-  const key = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY;
-  const envVar = provider === 'openai' ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY';
+  // OpenAI-compatible providers (OpenAI, Gemini, DeepSeek)
+  const config = OPENAI_COMPATIBLE_CONFIG[provider];
+  const key = process.env[config.envVar];
   if (!key) {
-    return { text: null, error: NextResponse.json({ error: `${envVar} not configured in .env.local` }, { status: 401 }) };
+    return { text: null, error: NextResponse.json({ error: `${config.envVar} not configured in .env.local` }, { status: 401 }) };
   }
-  const clientOptions = provider === 'openai'
-    ? { apiKey: key }
-    : { apiKey: key, baseURL: 'https://api.deepseek.com' };
-  const client = new OpenAI(clientOptions);
+  const client = new OpenAI({
+    apiKey: key,
+    ...(config.baseURL && { baseURL: config.baseURL }),
+  });
   const response = await client.chat.completions.create({
     model: resolvedModel,
     messages: [

@@ -8,7 +8,7 @@ import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
 const extractSchema = z.object({
   text: z.string().min(1, '텍스트가 비어있습니다.'),
   type: z.enum(['pdf_text', 'dart_data', 'image_base64']).optional(),
-  provider: z.enum(['anthropic', 'openai', 'deepseek']).optional(),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'deepseek']).optional(),
 });
 
 export async function POST(request: Request) {

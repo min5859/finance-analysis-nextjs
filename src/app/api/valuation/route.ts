@@ -7,7 +7,7 @@ const valuationSchema = z.object({
   company_info: z.object({ corp_name: z.string(), sector: z.string().optional() }).passthrough(),
   financial_data: z.object({}).passthrough(),
   industry_info: z.object({}).passthrough().optional(),
-  provider: z.enum(['anthropic', 'openai', 'deepseek']).optional(),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'deepseek']).optional(),
 });
 
 export async function POST(request: Request) {
