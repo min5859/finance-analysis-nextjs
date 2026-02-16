@@ -24,8 +24,12 @@ const slideLinks = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { companies, loadCompanyList, loadCompany, companyData, apiKey, setApiKey, dartApiKey, setDartApiKey } = useCompanyStore();
-  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; dartKeySet: boolean } | null>(null);
+  const {
+    companies, loadCompanyList, loadCompany, companyData,
+    apiKey, setApiKey, dartApiKey, setDartApiKey,
+    aiProvider, setAiProvider, deepseekApiKey, setDeepseekApiKey,
+  } = useCompanyStore();
+  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
@@ -43,22 +47,50 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* API Keys */}
+      {/* AI Provider & API Keys */}
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
-          {envKeys?.anthropicKeySet ? (
-            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-          ) : (
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          )}
+          <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
+          <select
+            value={aiProvider}
+            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'deepseek')}
+            className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="deepseek">DeepSeek</option>
+          </select>
         </div>
+        {aiProvider === 'anthropic' ? (
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
+            {envKeys?.anthropicKeySet ? (
+              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+            ) : (
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            )}
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">DeepSeek API Key</label>
+            {envKeys?.deepseekKeySet ? (
+              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+            ) : (
+              <input
+                type="password"
+                value={deepseekApiKey}
+                onChange={(e) => setDeepseekApiKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            )}
+          </div>
+        )}
         <div>
           <label className="text-xs text-gray-500 block mb-1">DART API Key</label>
           {envKeys?.dartKeySet ? (

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAnthropicClient, AI_MODEL } from '@/lib/anthropic-client';
+import { chatCompletion, type AIProvider } from '@/lib/ai-client';
 import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
 
 const valuationSchema = z.object({
@@ -8,6 +8,7 @@ const valuationSchema = z.object({
   financial_data: z.object({}).passthrough(),
   industry_info: z.object({}).passthrough().optional(),
   apiKey: z.string().optional(),
+  provider: z.enum(['anthropic', 'deepseek']).optional(),
 });
 
 export async function POST(request: Request) {
@@ -17,11 +18,9 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: '유효하지 않은 요청입니다.', details: parsed.error.issues }, { status: 400 });
     }
-    const { company_info, financial_data, industry_info, apiKey } = parsed.data;
-    const { client, error } = getAnthropicClient(apiKey);
-    if (error) return error;
+    const { company_info, financial_data, industry_info, apiKey, provider = 'anthropic' } = parsed.data;
 
-    const prompt = `
+    const userMessage = `
 # 기업 정보
 기업명: ${company_info?.corp_name || '알 수 없음'}
 업종: ${company_info?.sector || '알 수 없음'}
@@ -49,17 +48,17 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
 }
 금액 단위는 억원으로 통일하세요.`;
 
-    const response = await client.messages.create({
-      model: AI_MODEL,
+    const { text: responseText, error } = await chatCompletion({
+      provider: provider as AIProvider,
+      apiKey,
       system: '당신은 기업 가치 평가와 M&A 분석을 전문으로 하는 금융 애널리스트입니다.',
-      messages: [{ role: 'user', content: prompt }],
+      userMessage,
       temperature: 0.2,
-      max_tokens: 4000,
+      maxTokens: 4000,
     });
+    if (error) return error;
 
-    const content = response.content[0];
-    const responseText = content.type === 'text' ? content.text : '';
-    const data = extractJsonFromAIResponse(responseText);
+    const data = extractJsonFromAIResponse(responseText!);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
