@@ -26,7 +26,9 @@ export default function RootLayout({
           <Sidebar />
           <main className="flex-1 p-6 overflow-auto">
             <Header />
-            {children}
+            <div id="pdf-content">
+              {children}
+            </div>
           </main>
         </div>
       </body>
