@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { navOnlyItems, reportSlides } from '@/lib/slide-config';
 
 const slideLinks = [
@@ -11,24 +11,13 @@ const slideLinks = [
   ...reportSlides.map((s) => ({ href: `/${s.id}`, label: s.label })),
 ];
 
-const AI_KEY_LABELS: Record<string, { label: string; envField: 'anthropicKeySet' | 'openaiKeySet' | 'geminiKeySet' | 'deepseekKeySet' }> = {
-  anthropic: { label: 'Anthropic API Key', envField: 'anthropicKeySet' },
-  openai: { label: 'OpenAI API Key', envField: 'openaiKeySet' },
-  gemini: { label: 'Gemini API Key', envField: 'geminiKeySet' },
-  deepseek: { label: 'DeepSeek API Key', envField: 'deepseekKeySet' },
-};
-
 export default function Sidebar() {
   const pathname = usePathname();
   const { companies, loadCompanyList, loadCompany, companyData, aiProvider, setAiProvider } = useCompanyStore();
-  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; openaiKeySet: boolean; geminiKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
-    fetch('/api/config').then(r => r.json()).then(setEnvKeys).catch(() => {});
   }, [loadCompanyList]);
-
-  const currentAiKey = AI_KEY_LABELS[aiProvider];
 
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
@@ -41,37 +30,19 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* AI Provider & API Key Status */}
-      <div className="p-4 border-b border-gray-200 space-y-3">
-        <div>
-          <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
-          <select
-            value={aiProvider}
-            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'gemini' | 'deepseek')}
-            className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="openai">OpenAI (GPT)</option>
-            <option value="gemini">Google (Gemini)</option>
-            <option value="deepseek">DeepSeek</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 block mb-1">{currentAiKey.label}</label>
-          {envKeys?.[currentAiKey.envField] ? (
-            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-          ) : (
-            <p className="text-xs text-red-500 px-2 py-1.5 bg-red-50 rounded">.env.local에 설정 필요</p>
-          )}
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 block mb-1">DART API Key</label>
-          {envKeys?.dartKeySet ? (
-            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-          ) : (
-            <p className="text-xs text-red-500 px-2 py-1.5 bg-red-50 rounded">.env.local에 설정 필요</p>
-          )}
-        </div>
+      {/* AI Provider */}
+      <div className="p-4 border-b border-gray-200">
+        <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
+        <select
+          value={aiProvider}
+          onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'gemini' | 'deepseek')}
+          className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="gemini">Google (Gemini)</option>
+          <option value="deepseek">DeepSeek</option>
+        </select>
       </div>
 
       {/* Company Select */}
