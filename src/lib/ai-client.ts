@@ -2,12 +2,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 
-export type AIProvider = 'anthropic' | 'deepseek';
+export type AIProvider = 'anthropic' | 'openai' | 'deepseek';
 
 export const MAX_INPUT_CHARS = 20_000;
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
   anthropic: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o',
   deepseek: 'deepseek-chat',
 };
 
@@ -49,12 +50,17 @@ export async function chatCompletion({
     return { text: content.type === 'text' ? content.text : '', error: null };
   }
 
-  // DeepSeek (OpenAI-compatible)
-  const key = apiKey || process.env.DEEPSEEK_API_KEY;
+  // OpenAI & DeepSeek (both OpenAI-compatible)
+  const envKey = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY;
+  const key = apiKey || envKey;
+  const label = provider === 'openai' ? 'OpenAI' : 'DeepSeek';
   if (!key) {
-    return { text: null, error: NextResponse.json({ error: 'DeepSeek API key required' }, { status: 401 }) };
+    return { text: null, error: NextResponse.json({ error: `${label} API key required` }, { status: 401 }) };
   }
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
+  const clientOptions = provider === 'openai'
+    ? { apiKey: key }
+    : { apiKey: key, baseURL: 'https://api.deepseek.com' };
+  const client = new OpenAI(clientOptions);
   const response = await client.chat.completions.create({
     model: resolvedModel,
     messages: [

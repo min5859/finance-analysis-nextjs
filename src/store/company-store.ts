@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { CompanyFinancialData, CompanyListItem } from '@/types/company';
 import type { ValuationResult } from '@/types/valuation';
 
-type AIProvider = 'anthropic' | 'deepseek';
+type AIProvider = 'anthropic' | 'openai' | 'deepseek';
 
 interface CompanyStore {
   companyData: CompanyFinancialData | null;
@@ -13,6 +13,7 @@ interface CompanyStore {
   apiKey: string;
   dartApiKey: string;
   aiProvider: AIProvider;
+  openaiApiKey: string;
   deepseekApiKey: string;
   valuationResult: ValuationResult | null;
   isValuating: boolean;
@@ -24,6 +25,7 @@ interface CompanyStore {
   setApiKey: (key: string) => void;
   setDartApiKey: (key: string) => void;
   setAiProvider: (provider: AIProvider) => void;
+  setOpenaiApiKey: (key: string) => void;
   setDeepseekApiKey: (key: string) => void;
   setValuationResult: (result: ValuationResult | null) => void;
   setIsValuating: (v: boolean) => void;
@@ -40,6 +42,7 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
   apiKey: '',
   dartApiKey: '',
   aiProvider: 'anthropic',
+  openaiApiKey: '',
   deepseekApiKey: '',
   valuationResult: null,
   isValuating: false,
@@ -76,6 +79,8 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
   setDartApiKey: (key) => set({ dartApiKey: key }),
 
   setAiProvider: (provider) => set({ aiProvider: provider }),
+
+  setOpenaiApiKey: (key) => set({ openaiApiKey: key }),
 
   setDeepseekApiKey: (key) => set({ deepseekApiKey: key }),
 

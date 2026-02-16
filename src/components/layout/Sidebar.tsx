@@ -27,9 +27,10 @@ export default function Sidebar() {
   const {
     companies, loadCompanyList, loadCompany, companyData,
     apiKey, setApiKey, dartApiKey, setDartApiKey,
-    aiProvider, setAiProvider, deepseekApiKey, setDeepseekApiKey,
+    aiProvider, setAiProvider,
+    openaiApiKey, setOpenaiApiKey, deepseekApiKey, setDeepseekApiKey,
   } = useCompanyStore();
-  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
+  const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; openaiKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
@@ -53,14 +54,15 @@ export default function Sidebar() {
           <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
           <select
             value={aiProvider}
-            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'deepseek')}
+            onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'deepseek')}
             className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI (GPT)</option>
             <option value="deepseek">DeepSeek</option>
           </select>
         </div>
-        {aiProvider === 'anthropic' ? (
+        {aiProvider === 'anthropic' && (
           <div>
             <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
             {envKeys?.anthropicKeySet ? (
@@ -75,7 +77,24 @@ export default function Sidebar() {
               />
             )}
           </div>
-        ) : (
+        )}
+        {aiProvider === 'openai' && (
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">OpenAI API Key</label>
+            {envKeys?.openaiKeySet ? (
+              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+            ) : (
+              <input
+                type="password"
+                value={openaiApiKey}
+                onChange={(e) => setOpenaiApiKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            )}
+          </div>
+        )}
+        {aiProvider === 'deepseek' && (
           <div>
             <label className="text-xs text-gray-500 block mb-1">DeepSeek API Key</label>
             {envKeys?.deepseekKeySet ? (

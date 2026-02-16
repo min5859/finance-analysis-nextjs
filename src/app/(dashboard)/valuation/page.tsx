@@ -11,7 +11,7 @@ import BarChart from '@/components/charts/BarChart';
 import { formatBillion } from '@/lib/format';
 
 export default function ValuationPage() {
-  const { apiKey, deepseekApiKey, aiProvider, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
+  const { apiKey, openaiApiKey, deepseekApiKey, aiProvider, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
   const { dl } = useFinancialData();
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +21,7 @@ export default function ValuationPage() {
   const cf = dl.getCashFlowData();
 
   const handleAnalyze = async () => {
-    const currentKey = aiProvider === 'anthropic' ? apiKey : deepseekApiKey;
+    const currentKey = aiProvider === 'anthropic' ? apiKey : aiProvider === 'openai' ? openaiApiKey : deepseekApiKey;
     if (!currentKey) { setError('API 키를 입력해주세요.'); return; }
     setIsValuating(true); setError(null);
     try {
