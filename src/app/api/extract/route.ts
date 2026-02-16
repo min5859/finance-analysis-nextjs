@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       system: `${prompt}\n\nJSON 템플릿:\n${template}`,
       userMessage: `다음 재무제표 내용을 분석하여 지정된 JSON 형식으로 변환해주세요. 문서 내용: ${text?.substring(0, MAX_INPUT_CHARS) || ''}`,
       temperature: 0.1,
-      maxTokens: 8000,
+      maxTokens: 8192,
     });
     if (error) return error;
 

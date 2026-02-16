@@ -34,7 +34,7 @@ export async function chatCompletion({
   system,
   userMessage,
   temperature = 0.2,
-  maxTokens = 4000,
+  maxTokens = 8192,
 }: ChatCompletionParams): Promise<{ text: string | null; error: NextResponse | null }> {
   const resolvedModel = model || DEFAULT_MODELS[provider];
 
