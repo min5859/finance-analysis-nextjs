@@ -7,7 +7,6 @@ const valuationSchema = z.object({
   company_info: z.object({ corp_name: z.string(), sector: z.string().optional() }).passthrough(),
   financial_data: z.object({}).passthrough(),
   industry_info: z.object({}).passthrough().optional(),
-  apiKey: z.string().optional(),
   provider: z.enum(['anthropic', 'openai', 'deepseek']).optional(),
 });
 
@@ -18,7 +17,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: '유효하지 않은 요청입니다.', details: parsed.error.issues }, { status: 400 });
     }
-    const { company_info, financial_data, industry_info, apiKey, provider = 'anthropic' } = parsed.data;
+    const { company_info, financial_data, industry_info, provider = 'anthropic' } = parsed.data;
 
     const userMessage = `
 # 기업 정보
@@ -50,7 +49,6 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
 
     const { text: responseText, error } = await chatCompletion({
       provider: provider as AIProvider,
-      apiKey,
       system: '당신은 기업 가치 평가와 M&A 분석을 전문으로 하는 금융 애널리스트입니다.',
       userMessage,
       temperature: 0.2,

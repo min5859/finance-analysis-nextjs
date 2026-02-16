@@ -10,11 +10,7 @@ interface CompanyStore {
   companies: CompanyListItem[];
   isLoading: boolean;
   error: string | null;
-  apiKey: string;
-  dartApiKey: string;
   aiProvider: AIProvider;
-  openaiApiKey: string;
-  deepseekApiKey: string;
   valuationResult: ValuationResult | null;
   isValuating: boolean;
 
@@ -22,11 +18,7 @@ interface CompanyStore {
   setCompanies: (list: CompanyListItem[]) => void;
   loadCompany: (filename: string) => Promise<void>;
   loadCompanyList: () => Promise<void>;
-  setApiKey: (key: string) => void;
-  setDartApiKey: (key: string) => void;
   setAiProvider: (provider: AIProvider) => void;
-  setOpenaiApiKey: (key: string) => void;
-  setDeepseekApiKey: (key: string) => void;
   setValuationResult: (result: ValuationResult | null) => void;
   setIsValuating: (v: boolean) => void;
   clearData: () => void;
@@ -39,11 +31,7 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
   companies: [],
   isLoading: false,
   error: null,
-  apiKey: '',
-  dartApiKey: '',
   aiProvider: 'anthropic',
-  openaiApiKey: '',
-  deepseekApiKey: '',
   valuationResult: null,
   isValuating: false,
 
@@ -74,15 +62,7 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
     }
   },
 
-  setApiKey: (key) => set({ apiKey: key }),
-
-  setDartApiKey: (key) => set({ dartApiKey: key }),
-
   setAiProvider: (provider) => set({ aiProvider: provider }),
-
-  setOpenaiApiKey: (key) => set({ openaiApiKey: key }),
-
-  setDeepseekApiKey: (key) => set({ deepseekApiKey: key }),
 
   setValuationResult: (result) => set({ valuationResult: result }),
 

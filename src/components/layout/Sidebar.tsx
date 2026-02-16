@@ -22,20 +22,23 @@ const slideLinks = [
   { href: '/valuation-manual', label: '가치 평가(검증)' },
 ];
 
+const AI_KEY_LABELS: Record<string, { label: string; envField: 'anthropicKeySet' | 'openaiKeySet' | 'deepseekKeySet' }> = {
+  anthropic: { label: 'Anthropic API Key', envField: 'anthropicKeySet' },
+  openai: { label: 'OpenAI API Key', envField: 'openaiKeySet' },
+  deepseek: { label: 'DeepSeek API Key', envField: 'deepseekKeySet' },
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
-  const {
-    companies, loadCompanyList, loadCompany, companyData,
-    apiKey, setApiKey, dartApiKey, setDartApiKey,
-    aiProvider, setAiProvider,
-    openaiApiKey, setOpenaiApiKey, deepseekApiKey, setDeepseekApiKey,
-  } = useCompanyStore();
+  const { companies, loadCompanyList, loadCompany, companyData, aiProvider, setAiProvider } = useCompanyStore();
   const [envKeys, setEnvKeys] = useState<{ anthropicKeySet: boolean; openaiKeySet: boolean; deepseekKeySet: boolean; dartKeySet: boolean } | null>(null);
 
   useEffect(() => {
     loadCompanyList();
     fetch('/api/config').then(r => r.json()).then(setEnvKeys).catch(() => {});
   }, [loadCompanyList]);
+
+  const currentAiKey = AI_KEY_LABELS[aiProvider];
 
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
@@ -48,7 +51,7 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* AI Provider & API Keys */}
+      {/* AI Provider & API Key Status */}
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div>
           <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
@@ -62,66 +65,20 @@ export default function Sidebar() {
             <option value="deepseek">DeepSeek</option>
           </select>
         </div>
-        {aiProvider === 'anthropic' && (
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Anthropic API Key</label>
-            {envKeys?.anthropicKeySet ? (
-              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-            ) : (
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            )}
-          </div>
-        )}
-        {aiProvider === 'openai' && (
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">OpenAI API Key</label>
-            {envKeys?.openaiKeySet ? (
-              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-            ) : (
-              <input
-                type="password"
-                value={openaiApiKey}
-                onChange={(e) => setOpenaiApiKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            )}
-          </div>
-        )}
-        {aiProvider === 'deepseek' && (
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">DeepSeek API Key</label>
-            {envKeys?.deepseekKeySet ? (
-              <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
-            ) : (
-              <input
-                type="password"
-                value={deepseekApiKey}
-                onChange={(e) => setDeepseekApiKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            )}
-          </div>
-        )}
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">{currentAiKey.label}</label>
+          {envKeys?.[currentAiKey.envField] ? (
+            <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
+          ) : (
+            <p className="text-xs text-red-500 px-2 py-1.5 bg-red-50 rounded">.env.local에 설정 필요</p>
+          )}
+        </div>
         <div>
           <label className="text-xs text-gray-500 block mb-1">DART API Key</label>
           {envKeys?.dartKeySet ? (
             <p className="text-xs text-emerald-600 px-2 py-1.5 bg-emerald-50 rounded">.env.local에 설정됨</p>
           ) : (
-            <input
-              type="password"
-              value={dartApiKey}
-              onChange={(e) => setDartApiKey(e.target.value)}
-              placeholder="DART API Key"
-              className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-            />
+            <p className="text-xs text-red-500 px-2 py-1.5 bg-red-50 rounded">.env.local에 설정 필요</p>
           )}
         </div>
       </div>

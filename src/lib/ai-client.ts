@@ -14,7 +14,6 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
 
 interface ChatCompletionParams {
   provider: AIProvider;
-  apiKey?: string;
   model?: string;
   system: string;
   userMessage: string;
@@ -24,7 +23,6 @@ interface ChatCompletionParams {
 
 export async function chatCompletion({
   provider,
-  apiKey,
   model,
   system,
   userMessage,
@@ -34,9 +32,9 @@ export async function chatCompletion({
   const resolvedModel = model || DEFAULT_MODELS[provider];
 
   if (provider === 'anthropic') {
-    const key = apiKey || process.env.ANTHROPIC_API_KEY;
+    const key = process.env.ANTHROPIC_API_KEY;
     if (!key) {
-      return { text: null, error: NextResponse.json({ error: 'Anthropic API key required' }, { status: 401 }) };
+      return { text: null, error: NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured in .env.local' }, { status: 401 }) };
     }
     const client = new Anthropic({ apiKey: key });
     const response = await client.messages.create({
@@ -51,11 +49,10 @@ export async function chatCompletion({
   }
 
   // OpenAI & DeepSeek (both OpenAI-compatible)
-  const envKey = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY;
-  const key = apiKey || envKey;
-  const label = provider === 'openai' ? 'OpenAI' : 'DeepSeek';
+  const key = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY;
+  const envVar = provider === 'openai' ? 'OPENAI_API_KEY' : 'DEEPSEEK_API_KEY';
   if (!key) {
-    return { text: null, error: NextResponse.json({ error: `${label} API key required` }, { status: 401 }) };
+    return { text: null, error: NextResponse.json({ error: `${envVar} not configured in .env.local` }, { status: 401 }) };
   }
   const clientOptions = provider === 'openai'
     ? { apiKey: key }

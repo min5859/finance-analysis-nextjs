@@ -11,7 +11,7 @@ import BarChart from '@/components/charts/BarChart';
 import { formatBillion } from '@/lib/format';
 
 export default function ValuationPage() {
-  const { apiKey, openaiApiKey, deepseekApiKey, aiProvider, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
+  const { aiProvider, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
   const { dl } = useFinancialData();
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +21,6 @@ export default function ValuationPage() {
   const cf = dl.getCashFlowData();
 
   const handleAnalyze = async () => {
-    const currentKey = aiProvider === 'anthropic' ? apiKey : aiProvider === 'openai' ? openaiApiKey : deepseekApiKey;
-    if (!currentKey) { setError('API 키를 입력해주세요.'); return; }
     setIsValuating(true); setError(null);
     try {
       const res = await fetch('/api/valuation', {
@@ -36,7 +34,6 @@ export default function ValuationPage() {
             revenue: perf.매출액, operating_profit: perf.영업이익, net_income: perf.순이익,
             fcf: cf.FCF,
           },
-          apiKey: currentKey,
           provider: aiProvider,
         }),
       });
