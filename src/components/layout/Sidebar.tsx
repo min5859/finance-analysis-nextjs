@@ -22,13 +22,13 @@ export default function Sidebar() {
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200">
+      <Link href="/" className="block p-4 border-b border-gray-200">
         <img
           src="/04.M&AIKorea_CI_hor_transparent-04(white).png"
           alt="M&AI Korea"
           className="w-full bg-gray-900 rounded p-2"
         />
-      </div>
+      </Link>
 
       {/* AI Provider */}
       <div className="p-4 border-b border-gray-200">
