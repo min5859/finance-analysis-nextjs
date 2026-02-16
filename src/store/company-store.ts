@@ -58,8 +58,8 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
       if (!res.ok) return;
       const list = await res.json();
       set({ companies: list });
-    } catch {
-      // silent fail
+    } catch (err) {
+      console.error('Failed to load company list:', err);
     }
   },
 

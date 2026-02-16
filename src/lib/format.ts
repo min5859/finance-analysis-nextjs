@@ -33,3 +33,11 @@ export function latest(arr: number[]): number {
 export function previous(arr: number[]): number {
   return arr.length >= 2 ? arr[arr.length - 2] : 0;
 }
+
+/** 원 단위 문자열 → 억원 변환 */
+export function convertToBillion(amountStr: string): number {
+  if (!amountStr || amountStr === '-') return 0;
+  const cleaned = amountStr.replace(/,/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : Math.round(num / 100000000);
+}

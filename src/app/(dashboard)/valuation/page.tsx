@@ -1,20 +1,21 @@
 'use client';
 import { useState } from 'react';
 import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import ChartCard from '@/components/charts/ChartCard';
-import ValuationBarChart from '@/components/charts/ValuationBarChart';
+import BarChart from '@/components/charts/BarChart';
 import { formatBillion } from '@/lib/format';
 
 export default function ValuationPage() {
-  const { companyData, apiKey, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
+  const { apiKey, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();
+  const { dl } = useFinancialData();
   const [error, setError] = useState<string | null>(null);
 
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  if (!dl) return <EmptyState />;
   const perf = dl.getPerformanceData();
   const bs = dl.getBalanceSheetData();
   const cf = dl.getCashFlowData();
@@ -90,9 +91,9 @@ export default function ValuationPage() {
             <MetricCard title="종합 평균" value={Math.round(((v.ebitda_valuation.conservative + v.ebitda_valuation.base + v.ebitda_valuation.optimistic) / 3 + (v.dcf_valuation.conservative + v.dcf_valuation.base + v.dcf_valuation.optimistic) / 3) / 2)} unit="억원" />
           </div>
           <ChartCard title="시나리오별 기업가치 (억원)">
-            <ValuationBarChart labels={['보수적', '기본', '낙관적']} datasets={[
-              { label: 'EBITDA', data: [v.ebitda_valuation.conservative, v.ebitda_valuation.base, v.ebitda_valuation.optimistic], color: '#4f46e5' },
-              { label: 'DCF', data: [v.dcf_valuation.conservative, v.dcf_valuation.base, v.dcf_valuation.optimistic], color: '#10b981' },
+            <BarChart horizontal datalabelFormatter={(v) => v.toLocaleString('ko-KR')} labels={['보수적', '기본', '낙관적']} datasets={[
+              { label: 'EBITDA', data: [v.ebitda_valuation.conservative, v.ebitda_valuation.base, v.ebitda_valuation.optimistic], color: COLOR_PALETTE.primary },
+              { label: 'DCF', data: [v.dcf_valuation.conservative, v.dcf_valuation.base, v.dcf_valuation.optimistic], color: COLOR_PALETTE.success },
             ]} />
           </ChartCard>
 

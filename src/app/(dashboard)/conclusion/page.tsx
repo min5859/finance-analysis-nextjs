@@ -1,13 +1,11 @@
 'use client';
-import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
 import SlideHeader from '@/components/ui/SlideHeader';
 
 export default function ConclusionPage() {
-  const companyData = useCompanyStore((s) => s.companyData);
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  const { dl } = useFinancialData();
+  if (!dl) return <EmptyState />;
   const conclusion = dl.getConclusion();
 
   return (

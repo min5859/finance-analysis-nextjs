@@ -5,9 +5,11 @@ const DART_BASE = 'https://opendart.fss.or.kr/api';
 
 // Module-level cache for corp codes
 let corpCodesCache: { corp_code: string; corp_name: string; stock_code: string }[] | null = null;
+let corpCodesCacheTime = 0;
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 async function fetchCorpCodes(apiKey: string) {
-  if (corpCodesCache) return corpCodesCache;
+  if (corpCodesCache && Date.now() - corpCodesCacheTime < CACHE_TTL) return corpCodesCache;
 
   const res = await fetch(`${DART_BASE}/corpCode.xml?crtfc_key=${apiKey}`);
   if (!res.ok) throw new Error('DART API corp codes fetch failed');
@@ -35,6 +37,7 @@ async function fetchCorpCodes(apiKey: string) {
   }
 
   corpCodesCache = entries;
+  corpCodesCacheTime = Date.now();
   return entries;
 }
 

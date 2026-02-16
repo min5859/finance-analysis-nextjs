@@ -13,9 +13,11 @@ interface BarChartProps {
   }>;
   title?: string;
   height?: number;
+  horizontal?: boolean;
+  datalabelFormatter?: (v: number) => string;
 }
 
-export default function BarChart({ labels, datasets, title, height = 350 }: BarChartProps) {
+export default function BarChart({ labels, datasets, title, height = 350, horizontal, datalabelFormatter }: BarChartProps) {
   const colors = [COLOR_PALETTE.primary, COLOR_PALETTE.success, COLOR_PALETTE.warning, COLOR_PALETTE.danger];
 
   const data = {
@@ -28,9 +30,10 @@ export default function BarChart({ labels, datasets, title, height = 350 }: BarC
       datalabels: {
         display: true,
         anchor: 'end' as const,
-        align: 'top' as const,
+        align: horizontal ? ('end' as const) : ('top' as const),
         font: { ...defaultFont, size: 10 },
         color: '#666',
+        ...(datalabelFormatter ? { formatter: datalabelFormatter } : {}),
       },
     })),
   };
@@ -38,15 +41,15 @@ export default function BarChart({ labels, datasets, title, height = 350 }: BarC
   const options: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
+    ...(horizontal ? { indexAxis: 'y' as const } : {}),
     plugins: {
       legend: { position: 'top', labels: { font: defaultFont } },
       tooltip: { mode: 'index', intersect: false },
       title: title ? { display: true, text: title, font: defaultFont } : undefined,
     },
-    scales: {
-      x: { ticks: { font: defaultFont } },
-      y: { beginAtZero: true, ticks: { font: defaultFont } },
-    },
+    scales: horizontal
+      ? { x: { beginAtZero: true, ticks: { font: defaultFont } }, y: { ticks: { font: defaultFont } } }
+      : { x: { ticks: { font: defaultFont } }, y: { beginAtZero: true, ticks: { font: defaultFont } } },
   };
 
   return (

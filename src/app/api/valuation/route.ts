@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
+import { getAnthropicClient, AI_MODEL } from '@/lib/anthropic-client';
+import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
 
 const valuationSchema = z.object({
   company_info: z.object({ corp_name: z.string(), sector: z.string().optional() }).passthrough(),
@@ -17,14 +18,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '유효하지 않은 요청입니다.', details: parsed.error.issues }, { status: 400 });
     }
     const { company_info, financial_data, industry_info, apiKey } = parsed.data;
-    const key = apiKey || process.env.ANTHROPIC_API_KEY;
-    
-    if (!key) {
-      return NextResponse.json({ error: 'API key required' }, { status: 401 });
-    }
+    const { client, error } = getAnthropicClient(apiKey);
+    if (error) return error;
 
-    const client = new Anthropic({ apiKey: key });
-    
     const prompt = `
 # 기업 정보
 기업명: ${company_info?.corp_name || '알 수 없음'}
@@ -54,7 +50,7 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
 금액 단위는 억원으로 통일하세요.`;
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: AI_MODEL,
       system: '당신은 기업 가치 평가와 M&A 분석을 전문으로 하는 금융 애널리스트입니다.',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
@@ -62,11 +58,8 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
     });
 
     const content = response.content[0];
-    let jsonStr = content.type === 'text' ? content.text : '';
-    const match = jsonStr.match(/(\{[\s\S]*\})/);
-    if (match) jsonStr = match[1];
-
-    const data = JSON.parse(jsonStr);
+    const responseText = content.type === 'text' ? content.text : '';
+    const data = extractJsonFromAIResponse(responseText);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

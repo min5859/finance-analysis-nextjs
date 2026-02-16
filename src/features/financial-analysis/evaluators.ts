@@ -78,3 +78,20 @@ export function evaluateFinancialSafety(
 
   return { grade, score, items };
 }
+
+export interface CCCResult {
+  grade: string;
+  color: string;
+  bgColor: string;
+}
+
+export function evaluateCCC(
+  ccc: number,
+  thresholds?: { very_good?: number; good?: number; normal?: number; caution: number }
+): CCCResult {
+  const t = thresholds || { very_good: 30, good: 60, normal: 90, caution: 120 };
+  if (ccc <= (t.very_good || 30)) return { grade: '매우 우수', color: 'text-emerald-600', bgColor: 'bg-emerald-50' };
+  if (ccc <= (t.good || 60)) return { grade: '우수', color: 'text-emerald-600', bgColor: 'bg-emerald-50' };
+  if (ccc <= (t.normal || 90)) return { grade: '보통', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
+  return { grade: '주의', color: 'text-red-500', bgColor: 'bg-red-50' };
+}

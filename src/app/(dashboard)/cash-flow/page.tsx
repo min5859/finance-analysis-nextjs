@@ -1,6 +1,7 @@
 'use client';
-import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import InsightCard from '@/components/ui/InsightCard';
@@ -9,10 +10,8 @@ import BarChart from '@/components/charts/BarChart';
 import { latest, previous } from '@/lib/format';
 
 export default function CashFlowPage() {
-  const companyData = useCompanyStore((s) => s.companyData);
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  const { dl } = useFinancialData();
+  if (!dl) return <EmptyState />;
   const cf = dl.getCashFlowData();
   const insights = dl.getInsights();
 
@@ -29,9 +28,9 @@ export default function CashFlowPage() {
         <BarChart
           labels={cf.year}
           datasets={[
-            { label: '영업활동', data: cf.영업활동, color: '#4f46e5' },
-            { label: '투자활동', data: cf.투자활동, color: '#ef4444' },
-            { label: 'FCF', data: cf.FCF, color: '#10b981' },
+            { label: '영업활동', data: cf.영업활동, color: COLOR_PALETTE.primary },
+            { label: '투자활동', data: cf.투자활동, color: COLOR_PALETTE.danger },
+            { label: 'FCF', data: cf.FCF, color: COLOR_PALETTE.success },
           ]}
         />
       </ChartCard>

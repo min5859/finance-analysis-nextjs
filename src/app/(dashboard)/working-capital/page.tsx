@@ -1,26 +1,18 @@
 'use client';
-import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import InsightCard from '@/components/ui/InsightCard';
 import ChartCard from '@/components/charts/ChartCard';
 import BarChart from '@/components/charts/BarChart';
 import { latest, previous, formatDays } from '@/lib/format';
-
-function evaluateCCC(ccc: number, thresholds?: { very_good?: number; good?: number; normal?: number; caution: number }) {
-  const t = thresholds || { very_good: 30, good: 60, normal: 90, caution: 120 };
-  if (ccc <= (t.very_good || 30)) return { grade: '매우 우수', color: 'text-emerald-600', bgColor: 'bg-emerald-50' };
-  if (ccc <= (t.good || 60)) return { grade: '우수', color: 'text-emerald-600', bgColor: 'bg-emerald-50' };
-  if (ccc <= (t.normal || 90)) return { grade: '보통', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
-  return { grade: '주의', color: 'text-red-500', bgColor: 'bg-red-50' };
-}
+import { evaluateCCC } from '@/features/financial-analysis/evaluators';
 
 export default function WorkingCapitalPage() {
-  const companyData = useCompanyStore((s) => s.companyData);
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  const { dl } = useFinancialData();
+  if (!dl) return <EmptyState />;
   const wc = dl.getWorkingCapitalData();
   const cf = dl.getCashFlowData();
   const insights = dl.getInsights();
@@ -50,10 +42,10 @@ export default function WorkingCapitalPage() {
         <BarChart
           labels={wc.year}
           datasets={[
-            { label: 'DSO', data: wc.DSO, color: '#4f46e5' },
-            { label: 'DIO', data: wc.DIO, color: '#10b981' },
-            { label: 'DPO', data: wc.DPO, color: '#f59e0b' },
-            { label: 'CCC', data: wc.CCC, color: '#ef4444' },
+            { label: 'DSO', data: wc.DSO, color: COLOR_PALETTE.primary },
+            { label: 'DIO', data: wc.DIO, color: COLOR_PALETTE.success },
+            { label: 'DPO', data: wc.DPO, color: COLOR_PALETTE.warning },
+            { label: 'CCC', data: wc.CCC, color: COLOR_PALETTE.danger },
           ]}
         />
       </ChartCard>

@@ -1,6 +1,7 @@
 'use client';
-import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import InsightCard from '@/components/ui/InsightCard';
@@ -10,10 +11,8 @@ import { evaluateFinancialSafety } from '@/features/financial-analysis/evaluator
 import { latest, previous } from '@/lib/format';
 
 export default function StabilityPage() {
-  const companyData = useCompanyStore((s) => s.companyData);
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  const { dl } = useFinancialData();
+  if (!dl) return <EmptyState />;
   const stab = dl.getStabilityData();
   const insights = dl.getInsights();
   const safety = evaluateFinancialSafety(stab, insights.stability?.thresholds);
@@ -31,9 +30,9 @@ export default function StabilityPage() {
         <LineChart
           labels={stab.year}
           datasets={[
-            { label: '부채비율 (%)', data: stab.부채비율, color: '#ef4444' },
-            { label: '유동비율 (%)', data: stab.유동비율, color: '#4f46e5' },
-            { label: '이자보상배율 (배)', data: stab.이자보상배율, color: '#f59e0b', yAxisID: 'y1' },
+            { label: '부채비율 (%)', data: stab.부채비율, color: COLOR_PALETTE.danger },
+            { label: '유동비율 (%)', data: stab.유동비율, color: COLOR_PALETTE.primary },
+            { label: '이자보상배율 (배)', data: stab.이자보상배율, color: COLOR_PALETTE.warning, yAxisID: 'y1' },
           ]}
           y2AxisLabel="배"
         />

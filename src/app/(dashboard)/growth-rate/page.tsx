@@ -1,16 +1,15 @@
 'use client';
-import { useCompanyStore } from '@/store/company-store';
-import { DataLoader } from '@/lib/data-loader';
+import { useFinancialData } from '@/hooks/useFinancialData';
+import EmptyState from '@/components/ui/EmptyState';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 import SlideHeader from '@/components/ui/SlideHeader';
 import InsightCard from '@/components/ui/InsightCard';
 import ChartCard from '@/components/charts/ChartCard';
 import BarChart from '@/components/charts/BarChart';
 
 export default function GrowthRatePage() {
-  const companyData = useCompanyStore((s) => s.companyData);
-  if (!companyData) return <p className="text-gray-500 text-center py-12">기업 데이터를 먼저 로드해주세요.</p>;
-
-  const dl = new DataLoader(companyData);
+  const { dl } = useFinancialData();
+  if (!dl) return <EmptyState />;
   const gr = dl.getGrowthRates();
   const insights = dl.getInsights();
 
@@ -37,9 +36,9 @@ export default function GrowthRatePage() {
         <BarChart
           labels={gr.year}
           datasets={[
-            { label: '총자산성장률', data: gr.총자산성장률, color: '#4f46e5' },
-            { label: '매출액성장률', data: gr.매출액성장률, color: '#10b981' },
-            { label: '순이익성장률', data: gr.순이익성장률, color: '#f59e0b' },
+            { label: '총자산성장률', data: gr.총자산성장률, color: COLOR_PALETTE.primary },
+            { label: '매출액성장률', data: gr.매출액성장률, color: COLOR_PALETTE.success },
+            { label: '순이익성장률', data: gr.순이익성장률, color: COLOR_PALETTE.warning },
           ]}
         />
       </ChartCard>
