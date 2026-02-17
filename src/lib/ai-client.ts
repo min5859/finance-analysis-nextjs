@@ -8,9 +8,9 @@ export const MAX_INPUT_CHARS = 20_000;
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
   anthropic: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
-  openai: 'gpt-4o',
-  gemini: 'gemini-2.0-flash',
-  deepseek: 'deepseek-chat',
+  openai: process.env.OPENAI_MODEL || 'gpt-4o',
+  gemini: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+  deepseek: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
 };
 
 const OPENAI_COMPATIBLE_CONFIG: Record<string, { envVar: string; baseURL?: string }> = {
