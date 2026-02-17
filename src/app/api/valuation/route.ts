@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { chatCompletion, type AIProvider } from '@/lib/ai-client';
 import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
+import { prisma } from '@/lib/prisma';
 
 const valuationSchema = z.object({
   company_info: z.object({ corp_name: z.string(), sector: z.string().optional() }).passthrough(),
   financial_data: z.object({}).passthrough(),
   industry_info: z.object({}).passthrough().optional(),
   provider: z.enum(['anthropic', 'openai', 'gemini', 'deepseek']).optional(),
+  analysis_id: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -57,6 +59,22 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
     if (error) return error;
 
     const data = extractJsonFromAIResponse(responseText!);
+
+    // DB에 밸류에이션 결과 저장 (analysis_id가 있는 경우)
+    if (parsed.data.analysis_id) {
+      try {
+        await prisma.valuation.create({
+          data: {
+            analysisId: parsed.data.analysis_id,
+            provider,
+            result: data as object,
+          },
+        });
+      } catch {
+        // DB 저장 실패해도 결과는 반환
+      }
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

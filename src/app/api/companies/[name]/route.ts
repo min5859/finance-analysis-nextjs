@@ -1,33 +1,26 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const companiesDir = path.join(process.cwd(), 'src/data/companies');
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ name: string }> }
+  { params }: { params: Promise<{ name: string }> },
 ) {
   const { name } = await params;
-  const safeName = path.basename(name);
-  if (!safeName.endsWith('.json')) {
-    return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
-  }
-
-  const filePath = path.join(companiesDir, safeName);
-  if (!filePath.startsWith(companiesDir)) {
-    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
-  }
-
-  if (!fs.existsSync(filePath)) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
 
   try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const data = JSON.parse(raw);
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: 'Invalid data file' }, { status: 500 });
+    // name은 company UUID (기존 filename 자리)
+    const analysis = await prisma.analysis.findFirst({
+      where: { companyId: name },
+      orderBy: { createdAt: 'desc' },
+      select: { financialData: true },
+    });
+
+    if (!analysis) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(analysis.financialData);
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  nameEng   String?  @map("name_eng")
+  corpCode  String?  @map("corp_code")
+  stockCode String?  @map("stock_code")
+  sector    String?
+  isListed  Boolean  @default(true) @map("is_listed")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  financialStatements FinancialStatement[]
+  analyses            Analysis[]
+
+  @@unique([name, corpCode], name: "name_corpCode")
+  @@map("companies")
+}
+
+enum StatementSource {
+  dart
+  manual
+  upload
+}
+
+enum StatementType {
+  BS
+  IS
+  CF
+}
+
+model FinancialStatement {
+  id            String          @id @default(uuid())
+  companyId     String          @map("company_id")
+  year          String
+  source        StatementSource
+  statementType StatementType   @map("statement_type")
+  items         Json
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, year, source, statementType])
+  @@map("financial_statements")
+}
+
+model Analysis {
+  id            String   @id @default(uuid())
+  companyId     String   @map("company_id")
+  reportYear    String   @map("report_year")
+  provider      String
+  financialData Json     @map("financial_data")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  valuations Valuation[]
+
+  @@index([companyId, reportYear])
+  @@map("analyses")
+}
+
+model Valuation {
+  id         String   @id @default(uuid())
+  analysisId String   @map("analysis_id")
+  provider   String
+  result     Json
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@map("valuations")
+}
