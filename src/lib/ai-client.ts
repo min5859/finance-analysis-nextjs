@@ -7,7 +7,7 @@ export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'deepseek';
 export const MAX_INPUT_CHARS = 20_000;
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
-  anthropic: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
+  anthropic: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
   openai: process.env.OPENAI_MODEL || 'gpt-4o',
   gemini: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
   deepseek: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
