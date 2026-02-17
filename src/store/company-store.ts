@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { CompanyFinancialData, CompanyListItem } from '@/types/company';
 import type { ValuationResult } from '@/types/valuation';
 
@@ -74,6 +74,7 @@ export const useCompanyStore = create<CompanyStore>()(persist((set) => ({
   setError: (err) => set({ error: err }),
 }), {
   name: 'company-store',
+  storage: createJSONStorage(() => sessionStorage),
   partialize: (state) => ({
     companyData: state.companyData,
     selectedCompany: state.selectedCompany,
