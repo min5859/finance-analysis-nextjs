@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { CompanyFinancialData, CompanyListItem } from '@/types/company';
 import type { ValuationResult } from '@/types/valuation';
 
@@ -25,7 +26,7 @@ interface CompanyStore {
   setError: (err: string | null) => void;
 }
 
-export const useCompanyStore = create<CompanyStore>((set) => ({
+export const useCompanyStore = create<CompanyStore>()(persist((set) => ({
   companyData: null,
   selectedCompany: null,
   companies: [],
@@ -71,4 +72,13 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
   clearData: () => set({ companyData: null, selectedCompany: null, valuationResult: null, error: null }),
 
   setError: (err) => set({ error: err }),
+}), {
+  name: 'company-store',
+  partialize: (state) => ({
+    companyData: state.companyData,
+    selectedCompany: state.selectedCompany,
+    companies: state.companies,
+    aiProvider: state.aiProvider,
+    valuationResult: state.valuationResult,
+  }),
 }));
