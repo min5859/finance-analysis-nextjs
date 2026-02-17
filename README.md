@@ -355,3 +355,84 @@ docker compose down
 
 앱은 `DATABASE_URL`이 가리키는 곳에서 데이터를 읽고 씁니다.
 로컬이든 클라우드든 앱 코드는 동일합니다.
+
+---
+
+## Vercel + 클라우드 DB 배포
+
+Vercel은 서버리스 환경이라 Docker를 실행할 수 없습니다.
+따라서 외부 DB 서비스를 연결해야 합니다.
+
+```
+┌─ Vercel ──────────────┐       ┌─ Supabase/Neon ───────┐
+│  Next.js 앱           │──────→│  PostgreSQL DB        │
+│  (서버리스)            │ 인터넷 │  (서울 리전)           │
+└───────────────────────┘       └───────────────────────┘
+  DATABASE_URL 환경변수로 연결
+```
+
+### 설정 순서
+
+**1단계: 클라우드 DB 생성**
+
+위의 [클라우드 DB 사용하기](#클라우드-db-사용하기) 섹션에서 하나를 선택하여 DB를 생성합니다.
+Supabase 또는 Neon이 무료이고 가장 간단합니다.
+
+**2단계: 로컬에서 테이블 생성**
+
+```bash
+DATABASE_URL="클라우드_DB_URL" npx prisma migrate deploy
+```
+
+**3단계: Vercel에 환경변수 추가**
+
+1. [Vercel Dashboard](https://vercel.com) > 프로젝트 선택
+2. Settings > Environment Variables
+3. 아래 변수 추가:
+
+| Name | Value | Environment |
+|------|-------|:-----------:|
+| `DATABASE_URL` | 클라우드 DB 접속 URL | Production, Preview, Development 모두 체크 |
+
+> 기존에 설정한 `ANTHROPIC_API_KEY` 등의 환경변수는 그대로 유지합니다.
+
+**4단계: 재배포**
+
+환경변수 추가 후 재배포가 필요합니다:
+
+```bash
+# CLI로 재배포
+vercel --prod
+
+# 또는 git push하면 자동 재배포
+git push
+```
+
+**5단계: 확인**
+
+Vercel 배포 URL에서 앱이 정상 동작하는지 확인합니다.
+사이드바에 기업 목록이 표시되면 DB 연결 성공입니다.
+
+### 로컬 개발과 Vercel 배포를 동시에 사용하기
+
+로컬과 Vercel이 같은 DB를 바라보게 할 수 있습니다:
+
+```
+# .env.local (로컬 개발용)
+DATABASE_URL="postgresql://postgres.xxx:비밀번호@...supabase.com:6543/postgres"
+
+# Vercel 환경변수 (배포용)
+DATABASE_URL="postgresql://postgres.xxx:비밀번호@...supabase.com:6543/postgres"  ← 같은 URL
+```
+
+이렇게 하면 로컬에서 추가한 데이터가 Vercel 배포 사이트에서도 보입니다.
+
+반대로 로컬과 배포를 분리하려면 서로 다른 DB를 사용하면 됩니다:
+
+```
+# .env.local (로컬 개발용)
+DATABASE_URL="postgresql://fa_user:fa_pass@localhost:5432/fa_db"  ← 로컬 Docker
+
+# Vercel 환경변수 (배포용)
+DATABASE_URL="postgresql://postgres.xxx:비밀번호@...supabase.com:6543/postgres"  ← 클라우드
+```
