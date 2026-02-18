@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PDFParse } from 'pdf-parse';
 import { detectFinancialPages, type PageInfo } from '@/lib/financial-page-detector';
+import { handleApiError } from '@/lib/api-error';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -55,7 +56,6 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   } catch (err) {
-    console.error('Upload error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'upload');
   }
 }

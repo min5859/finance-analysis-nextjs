@@ -10,5 +10,9 @@ export function extractJsonFromAIResponse(text: string): object {
   const match = jsonStr.match(/(\{[\s\S]*\})/);
   if (match) jsonStr = match[1];
 
-  return JSON.parse(jsonStr);
+  try {
+    return JSON.parse(jsonStr);
+  } catch {
+    throw new Error('AI 응답을 JSON으로 파싱할 수 없습니다.');
+  }
 }

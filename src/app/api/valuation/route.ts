@@ -3,11 +3,15 @@ import { z } from 'zod';
 import { chatCompletion, type AIProvider } from '@/lib/ai-client';
 import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
 import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/api-error';
 
 const valuationSchema = z.object({
-  company_info: z.object({ corp_name: z.string(), sector: z.string().optional() }).passthrough(),
-  financial_data: z.object({}).passthrough(),
-  industry_info: z.object({}).passthrough().optional(),
+  company_info: z.object({
+    corp_name: z.string(),
+    sector: z.string().optional(),
+  }),
+  financial_data: z.record(z.string(), z.unknown()),
+  industry_info: z.record(z.string(), z.unknown()).optional(),
   provider: z.enum(['anthropic', 'openai', 'gemini', 'deepseek']).optional(),
   analysis_id: z.string().optional(),
 });
@@ -77,6 +81,6 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'valuation');
   }
 }

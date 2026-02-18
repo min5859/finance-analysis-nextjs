@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/api-error';
 
 export async function GET(
   _request: Request,
@@ -21,6 +22,6 @@ export async function GET(
 
     return NextResponse.json(analysis.financialData);
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'companies-detail');
   }
 }

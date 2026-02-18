@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/api-error';
 
 const companySaveSchema = z.object({
   company_name: z.string().min(1),
   company_code: z.string().optional(),
   sector: z.string().optional(),
   report_year: z.string().optional(),
-}).passthrough();
+  performance_data: z.record(z.string(), z.unknown()).optional(),
+  balance_sheet_data: z.record(z.string(), z.unknown()).optional(),
+  stability_data: z.record(z.string(), z.unknown()).optional(),
+  cash_flow_data: z.record(z.string(), z.unknown()).optional(),
+  working_capital_data: z.record(z.string(), z.unknown()).optional(),
+  profitability_data: z.record(z.string(), z.unknown()).optional(),
+  growth_rates: z.record(z.string(), z.unknown()).optional(),
+  dupont_data: z.record(z.string(), z.unknown()).optional(),
+  radar_data: z.record(z.string(), z.unknown()).optional(),
+  insights: z.record(z.string(), z.unknown()).optional(),
+  conclusion: z.record(z.string(), z.unknown()).optional(),
+});
 
 export async function GET() {
   try {
@@ -28,7 +41,7 @@ export async function GET() {
       })),
     );
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'companies-list');
   }
 }
 
@@ -67,12 +80,12 @@ export async function POST(request: Request) {
         companyId: company.id,
         reportYear: data.report_year || '',
         provider: 'anthropic',
-        financialData: body,
+        financialData: data as unknown as Prisma.InputJsonValue,
       },
     });
 
     return NextResponse.json({ success: true, filename: company.id });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'companies-save');
   }
 }

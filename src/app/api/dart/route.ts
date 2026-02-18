@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
+import { z } from 'zod';
+import { handleApiError } from '@/lib/api-error';
 
 const DART_BASE = 'https://opendart.fss.or.kr/api';
+
+const corpCodeSchema = z.string().regex(/^\d{8}$/, '유효하지 않은 기업 코드입니다.');
+const bsnsYearSchema = z.string().regex(/^\d{4}$/, '유효하지 않은 사업연도입니다.');
+const reprtCodeSchema = z.string().regex(/^\d{5}$/, '유효하지 않은 보고서 코드입니다.');
 
 // Module-level cache for corp codes
 let corpCodesCache: { corp_code: string; corp_name: string; stock_code: string }[] | null = null;
@@ -41,6 +47,30 @@ async function fetchCorpCodes(apiKey: string) {
   return entries;
 }
 
+function validateCorpParams(searchParams: URLSearchParams, requireYear: boolean) {
+  const corpResult = corpCodeSchema.safeParse(searchParams.get('corp_code'));
+  if (!corpResult.success) {
+    return { error: corpResult.error.issues[0].message };
+  }
+
+  if (requireYear) {
+    const yearResult = bsnsYearSchema.safeParse(searchParams.get('bsns_year'));
+    if (!yearResult.success) {
+      return { error: yearResult.error.issues[0].message };
+    }
+
+    const rawReprt = searchParams.get('reprt_code') || '11011';
+    const reprtResult = reprtCodeSchema.safeParse(rawReprt);
+    if (!reprtResult.success) {
+      return { error: reprtResult.error.issues[0].message };
+    }
+
+    return { corp_code: corpResult.data, bsns_year: yearResult.data, reprt_code: reprtResult.data };
+  }
+
+  return { corp_code: corpResult.data };
+}
+
 // GET /api/dart?action=search&query=삼성
 // GET /api/dart?action=financial&corp_code=xxx&bsns_year=2024&reprt_code=11011
 // GET /api/dart?action=company-info&corp_code=xxx
@@ -64,19 +94,20 @@ export async function GET(request: Request) {
     }
 
     if (action === 'financial') {
-      const corp_code = searchParams.get('corp_code');
-      const bsns_year = searchParams.get('bsns_year');
-      const reprt_code = searchParams.get('reprt_code') || '11011';
+      const params = validateCorpParams(searchParams, true);
+      if ('error' in params) {
+        return NextResponse.json({ error: params.error }, { status: 400 });
+      }
 
       const res = await fetch(
-        `${DART_BASE}/fnlttSinglAcntAll.json?crtfc_key=${dartKey}&corp_code=${corp_code}&bsns_year=${bsns_year}&reprt_code=${reprt_code}&fs_div=CFS`
+        `${DART_BASE}/fnlttSinglAcntAll.json?crtfc_key=${dartKey}&corp_code=${params.corp_code}&bsns_year=${params.bsns_year}&reprt_code=${params.reprt_code}&fs_div=CFS`
       );
       const data = await res.json();
 
       if (data.status !== '000') {
         // Try OFS (individual financial statements) if CFS fails
         const res2 = await fetch(
-          `${DART_BASE}/fnlttSinglAcntAll.json?crtfc_key=${dartKey}&corp_code=${corp_code}&bsns_year=${bsns_year}&reprt_code=${reprt_code}&fs_div=OFS`
+          `${DART_BASE}/fnlttSinglAcntAll.json?crtfc_key=${dartKey}&corp_code=${params.corp_code}&bsns_year=${params.bsns_year}&reprt_code=${params.reprt_code}&fs_div=OFS`
         );
         const data2 = await res2.json();
         return NextResponse.json(data2);
@@ -85,19 +116,24 @@ export async function GET(request: Request) {
     }
 
     if (action === 'company-info') {
-      const corp_code = searchParams.get('corp_code');
-      const res = await fetch(`${DART_BASE}/company.json?crtfc_key=${dartKey}&corp_code=${corp_code}`);
+      const params = validateCorpParams(searchParams, false);
+      if ('error' in params) {
+        return NextResponse.json({ error: params.error }, { status: 400 });
+      }
+
+      const res = await fetch(`${DART_BASE}/company.json?crtfc_key=${dartKey}&corp_code=${params.corp_code}`);
       const data = await res.json();
       return NextResponse.json(data);
     }
 
     if (action === 'audit') {
-      const corp_code = searchParams.get('corp_code');
-      const bsns_year = searchParams.get('bsns_year');
-      const reprt_code = searchParams.get('reprt_code') || '11011';
+      const params = validateCorpParams(searchParams, true);
+      if ('error' in params) {
+        return NextResponse.json({ error: params.error }, { status: 400 });
+      }
 
       const res = await fetch(
-        `${DART_BASE}/irdsSttus.json?crtfc_key=${dartKey}&corp_code=${corp_code}&bsns_year=${bsns_year}&reprt_code=${reprt_code}`
+        `${DART_BASE}/irdsSttus.json?crtfc_key=${dartKey}&corp_code=${params.corp_code}&bsns_year=${params.bsns_year}&reprt_code=${params.reprt_code}`
       );
       const data = await res.json();
       return NextResponse.json(data);
@@ -105,6 +141,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'dart');
   }
 }

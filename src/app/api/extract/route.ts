@@ -4,6 +4,7 @@ import path from 'path';
 import { z } from 'zod';
 import { chatCompletion, MAX_INPUT_CHARS, type AIProvider } from '@/lib/ai-client';
 import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
+import { handleApiError } from '@/lib/api-error';
 
 const extractSchema = z.object({
   text: z.string().min(1, '텍스트가 비어있습니다.'),
@@ -38,6 +39,6 @@ export async function POST(request: Request) {
     const data = extractJsonFromAIResponse(responseText!);
     return NextResponse.json({ success: true, data });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return handleApiError(err, 'extract');
   }
 }
