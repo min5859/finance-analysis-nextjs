@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
+import LayoutShell from '@/components/layout/LayoutShell';
 
 export const metadata: Metadata = {
   title: 'Financial Analysis System',
@@ -22,15 +21,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 p-6 overflow-auto">
-            <Header />
-            <div id="pdf-content">
-              {children}
-            </div>
-          </main>
-        </div>
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   );

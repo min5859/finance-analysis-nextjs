@@ -11,7 +11,7 @@ const slideLinks = [
   ...reportSlides.map((s) => ({ href: `/${s.id}`, label: s.label })),
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { companies, loadCompanyList, loadCompany, companyData, aiProvider, setAiProvider } = useCompanyStore();
 
@@ -76,6 +76,7 @@ export default function Sidebar() {
             <Link
               key={link.href}
               href={link.href}
+              onClick={onNavigate}
               className={`block text-sm px-3 py-1.5 rounded my-0.5 transition-colors ${
                 isActive
                   ? 'bg-indigo-50 text-indigo-700 font-medium'
