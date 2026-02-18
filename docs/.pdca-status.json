@@ -1,16 +1,18 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-18T09:30:00.000Z",
+  "lastUpdated": "2026-02-18T09:40:00.000Z",
   "activeFeatures": ["api-security-hardening"],
   "primaryFeature": "api-security-hardening",
   "features": {
     "api-security-hardening": {
-      "phase": "check",
+      "phase": "completed",
       "matchRate": 100,
       "planDoc": "docs/01-plan/features/api-security-hardening.plan.md",
       "designDoc": "docs/02-design/features/api-security-hardening.design.md",
       "analysisDoc": "docs/03-analysis/api-security-hardening.analysis.md",
-      "createdAt": "2026-02-18T09:00:00.000Z"
+      "reportDoc": "docs/04-report/api-security-hardening.report.md",
+      "createdAt": "2026-02-18T09:00:00.000Z",
+      "completedAt": "2026-02-18T09:40:00.000Z"
     }
   },
   "pipeline": {
@@ -21,7 +23,7 @@
   "session": {
     "startedAt": "2026-02-18T06:14:38.394Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-02-18T09:30:00.000Z"
+    "lastActivity": "2026-02-18T09:40:00.000Z"
   },
   "history": []
 }
