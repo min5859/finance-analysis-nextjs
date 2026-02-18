@@ -8,7 +8,6 @@ import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import ChartCard from '@/components/charts/ChartCard';
 import BarChart from '@/components/charts/BarChart';
-import { formatBillion } from '@/lib/format';
 
 export default function ValuationPage() {
   const { aiProvider, valuationResult, setValuationResult, isValuating, setIsValuating } = useCompanyStore();

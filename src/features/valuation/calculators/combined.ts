@@ -6,7 +6,7 @@ export function calculateCombined(
   p: CombinedParams,
   perfData: PerformanceData,
   bsData: BalanceSheetData,
-  cfData: CashFlowData,
+  _cfData: CashFlowData,
 ): ValuationResult {
   const results: { method: string; value: number; weight: number }[] = [];
 

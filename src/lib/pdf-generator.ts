@@ -1,5 +1,6 @@
 import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 
 interface PdfOptions {
   companyName: string;
@@ -16,7 +17,6 @@ export async function downloadPdf(
     logging: false,
   });
 
-  const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -35,16 +35,16 @@ export async function downloadPdf(
   headerCanvas.width = headerWidthPx;
   headerCanvas.height = headerHeightPx;
   const hctx = headerCanvas.getContext('2d')!;
-  hctx.fillStyle = '#ffffff';
+  hctx.fillStyle = COLOR_PALETTE.white;
   hctx.fillRect(0, 0, headerWidthPx, headerHeightPx);
   hctx.font = `${10 * headerScale}px "Noto Sans KR", sans-serif`;
-  hctx.fillStyle = '#666666';
+  hctx.fillStyle = COLOR_PALETTE.muted;
   hctx.textBaseline = 'middle';
   hctx.fillText(headerText, 0, headerHeightPx / 2);
   const headerImg = headerCanvas.toDataURL('image/png');
   const headerMmHeight = 6;
 
-  let yOffset = margin + headerMmHeight;
+  const yOffset = margin + headerMmHeight;
   let remainingHeight = imgHeight;
   let sourceY = 0;
 
@@ -89,10 +89,10 @@ function createHeaderImage(headerText: string, contentWidth: number) {
   headerCanvas.width = headerWidthPx;
   headerCanvas.height = headerHeightPx;
   const hctx = headerCanvas.getContext('2d')!;
-  hctx.fillStyle = '#ffffff';
+  hctx.fillStyle = COLOR_PALETTE.white;
   hctx.fillRect(0, 0, headerWidthPx, headerHeightPx);
   hctx.font = `${10 * headerScale}px "Noto Sans KR", sans-serif`;
-  hctx.fillStyle = '#666666';
+  hctx.fillStyle = COLOR_PALETTE.muted;
   hctx.textBaseline = 'middle';
   hctx.fillText(headerText, 0, headerHeightPx / 2);
   return headerCanvas.toDataURL('image/png');

@@ -37,6 +37,11 @@ export const COLOR_PALETTE = {
   info: '#8b5cf6',
   light: '#f3f4f6',
   dark: '#1f2937',
+  muted: '#666666',
+  white: '#ffffff',
+  headerFrom: '#0a1172',
+  headerVia: '#1a237e',
+  headerTo: '#283593',
 } as const;
 
 export const CHART_COLORS = [

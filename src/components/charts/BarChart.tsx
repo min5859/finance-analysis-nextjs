@@ -32,7 +32,7 @@ export default function BarChart({ labels, datasets, title, height = 350, horizo
         anchor: 'end' as const,
         align: horizontal ? ('end' as const) : ('top' as const),
         font: { ...defaultFont, size: 10 },
-        color: '#666',
+        color: COLOR_PALETTE.muted,
         ...(datalabelFormatter ? { formatter: datalabelFormatter } : {}),
       },
     })),

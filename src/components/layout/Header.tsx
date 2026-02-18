@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useCompanyStore } from '@/store/company-store';
 import { downloadPdf, downloadFullReportPdf } from '@/lib/pdf-generator';
 import FullReportContent from '@/components/pdf/FullReportContent';
+import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 
 export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const companyData = useCompanyStore((s) => s.companyData);
@@ -66,7 +67,10 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
   return (
     <>
-      <div className="bg-gradient-to-r from-[#0a1172] via-[#1a237e] to-[#283593] px-4 md:px-6 py-4 md:py-5 rounded-xl shadow-lg mb-4 md:mb-6 flex items-center justify-between gap-2">
+      <div
+        className="px-4 md:px-6 py-4 md:py-5 rounded-xl shadow-lg mb-4 md:mb-6 flex items-center justify-between gap-2"
+        style={{ background: `linear-gradient(to right, ${COLOR_PALETTE.headerFrom}, ${COLOR_PALETTE.headerVia}, ${COLOR_PALETTE.headerTo})` }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onMenuToggle}

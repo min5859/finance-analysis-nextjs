@@ -46,7 +46,7 @@ export default function BarLineChart({
         anchor: 'end' as const,
         align: 'top' as const,
         font: { ...defaultFont, size: 10 },
-        color: '#666',
+        color: COLOR_PALETTE.muted,
       },
     })),
     ...lineDatasets.map((ds, i) => ({

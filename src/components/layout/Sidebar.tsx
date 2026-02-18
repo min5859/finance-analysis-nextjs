@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
 import { useEffect } from 'react';
@@ -23,9 +24,11 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <Link href="/" className="block p-4 border-b border-gray-200">
-        <img
+        <Image
           src="/04.M&AIKorea_CI_hor_transparent-04(white).png"
           alt="M&AI Korea"
+          width={224}
+          height={48}
           className="w-full bg-gray-900 rounded p-2"
         />
       </Link>
