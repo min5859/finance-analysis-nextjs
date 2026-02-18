@@ -35,8 +35,11 @@ export async function POST(request: Request) {
       maxTokens: 8192,
     });
     if (error) return error;
+    if (!responseText) {
+      return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
+    }
 
-    const data = extractJsonFromAIResponse(responseText!);
+    const data = extractJsonFromAIResponse(responseText);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return handleApiError(err, 'extract');

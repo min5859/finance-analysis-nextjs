@@ -61,8 +61,11 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
       maxTokens: 4000,
     });
     if (error) return error;
+    if (!responseText) {
+      return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
+    }
 
-    const data = extractJsonFromAIResponse(responseText!);
+    const data = extractJsonFromAIResponse(responseText);
 
     // DB에 밸류에이션 결과 저장 (analysis_id가 있는 경우)
     if (parsed.data.analysis_id) {

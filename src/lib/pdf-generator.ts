@@ -34,7 +34,8 @@ export async function downloadPdf(
   const headerHeightPx = 24 * headerScale;
   headerCanvas.width = headerWidthPx;
   headerCanvas.height = headerHeightPx;
-  const hctx = headerCanvas.getContext('2d')!;
+  const hctx = headerCanvas.getContext('2d');
+  if (!hctx) throw new Error('Canvas 2D context not available');
   hctx.fillStyle = COLOR_PALETTE.white;
   hctx.fillRect(0, 0, headerWidthPx, headerHeightPx);
   hctx.font = `${10 * headerScale}px "Noto Sans KR", sans-serif`;
@@ -54,7 +55,8 @@ export async function downloadPdf(
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width = canvas.width;
     sliceCanvas.height = Math.round((drawHeight / imgHeight) * canvas.height);
-    const ctx = sliceCanvas.getContext('2d')!;
+    const ctx = sliceCanvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context not available');
     ctx.drawImage(
       canvas,
       0, sourceY, canvas.width, sliceCanvas.height,
@@ -88,7 +90,8 @@ function createHeaderImage(headerText: string, contentWidth: number) {
   const headerHeightPx = 24 * headerScale;
   headerCanvas.width = headerWidthPx;
   headerCanvas.height = headerHeightPx;
-  const hctx = headerCanvas.getContext('2d')!;
+  const hctx = headerCanvas.getContext('2d');
+  if (!hctx) throw new Error('Canvas 2D context not available');
   hctx.fillStyle = COLOR_PALETTE.white;
   hctx.fillRect(0, 0, headerWidthPx, headerHeightPx);
   hctx.font = `${10 * headerScale}px "Noto Sans KR", sans-serif`;
@@ -122,7 +125,8 @@ function addCanvasToPdf(
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width = canvas.width;
     sliceCanvas.height = Math.round((drawHeight / imgHeight) * canvas.height);
-    const ctx = sliceCanvas.getContext('2d')!;
+    const ctx = sliceCanvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context not available');
     ctx.drawImage(
       canvas,
       0, sourceY, canvas.width, sliceCanvas.height,

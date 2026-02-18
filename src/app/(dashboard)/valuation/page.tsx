@@ -39,7 +39,7 @@ export default function ValuationPage() {
       const result = await res.json();
       if (result.success) { setValuationResult(result.data); }
       else { setError(result.error || '분석 실패'); }
-    } catch (err) { setError(String(err)); }
+    } catch (err) { setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.'); }
     finally { setIsValuating(false); }
   };
 
