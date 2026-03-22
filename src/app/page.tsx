@@ -94,12 +94,16 @@ export default function HomePage() {
       formData.append('file', file);
 
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json();
-        throw new Error(err.error || '업로드 실패');
+      const uploadText = await uploadRes.text();
+      let uploadData: { text: string; totalPages: number; detectedPages: DetectedPage[]; error?: string };
+      try {
+        uploadData = JSON.parse(uploadText);
+      } catch {
+        throw new Error(`업로드 응답 파싱 실패: ${uploadText.substring(0, 100) || '빈 응답'}`);
       }
-
-      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error((uploadData.error as string) || '업로드 실패');
+      }
 
       setState((s) => ({
         ...s,
@@ -121,12 +125,16 @@ export default function HomePage() {
           provider: aiProvider,
         }),
       });
-      if (!extractRes.ok) {
-        const err = await extractRes.json();
-        throw new Error(err.error || 'AI 분석 실패');
+      const extractText = await extractRes.text();
+      let extractData: { data: CompanyFinancialData; error?: string };
+      try {
+        extractData = JSON.parse(extractText);
+      } catch {
+        throw new Error(`AI 응답 파싱 실패: ${extractText.substring(0, 100) || '빈 응답'}`);
       }
-
-      const extractData = await extractRes.json();
+      if (!extractRes.ok) {
+        throw new Error((extractData.error as string) || 'AI 분석 실패');
+      }
       const companyResult = extractData.data as CompanyFinancialData;
 
       // 3. 저장
