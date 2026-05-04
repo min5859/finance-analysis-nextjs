@@ -53,3 +53,4 @@ next-env.d.ts
 
 # local input files (PDFs, JSONs not tracked)
 /input_raw/
+.env*.local
