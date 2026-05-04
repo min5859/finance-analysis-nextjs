@@ -93,6 +93,35 @@ JSON / PDF / DART 3개 진입 플로우의 실제 동작을 코드 레벨로 확
     - [ ] `prompt.txt` 또는 `extract` 라우트의 시스템 프롬프트에 "감사 정보 활용 지침" 추가
     - [ ] `dart` 액션을 추가해 사업보고서 본문(IRDS 외 다른 공시) 같이 가져올지 검토 (스코프 ↑)
 
+## G. ⚠️ 보안 부채 — Anthropic API key client-direct 노출 *(2026-05-04)*
+
+Vercel Hobby 60s 함수 timeout 으로 큰 PDF 비전 분석이 서버 측에서 완료되지
+않는 문제를 임시로 우회. 인증된 사용자에게 `ANTHROPIC_API_KEY` 를 그대로
+내려주고 브라우저가 Anthropic SDK 로 직접 호출.
+
+**현재 노출 표면**:
+- `/api/anthropic-config` — auth() 통과 시 API key + system prompt 응답
+- `src/lib/anthropic-browser.ts` — 키를 메모리에 로드해 `dangerouslyAllowBrowser: true` 로 SDK 호출
+- 위 두 파일 모두 머리말에 ⚠️ TEMPORARY 마킹
+
+**리스크**:
+- 인증된 mnaikorea.com 사용자가 DevTools 로 키 추출 → 본인 외 용도로 무한 호출 가능
+- rate limit / 비용 한도 무력화 가능
+- 이메일 게이트는 비밀번호 없음 → 사실상 도메인 형식만 알면 누구나 접근
+
+- [ ] **회수 (다음 중 하나 만족 시 즉시)**
+  - [ ] (a) Vercel Pro 업그레이드 → maxDuration 300s 로 server-side 충분
+  - [ ] (b) Google Cloud Run 마이그레이션 → 60min timeout
+  - [ ] (c) 외부 워커 (Inngest 등) 도입 → polling 패턴
+- [ ] **회수 시 작업**
+  - [ ] `/api/anthropic-config` 라우트 삭제
+  - [ ] `src/lib/anthropic-browser.ts` 삭제
+  - [ ] `src/app/page.tsx` `processPdfFile` 의 anthropic 분기 제거 → server multipart 단일 경로로 복귀
+  - [ ] `pdf-parse` 모듈 로드 이슈가 해결됐는지 검증 (Cloud Run 이면 OK, Vercel Pro 면 같은 이슈 잔존 가능)
+- [ ] **임시 운영 시 추가 가드 (필요하면)**
+  - [ ] Anthropic 측에서 별도 IP-allowlisted / 기간제 키 발급 → 일반 키 분리
+  - [ ] 사용량 alert 설정 → 도용 시 빠른 인지
+
 ## F. 인증 — 향후 작업 *(2026-05-04 보류 사항)*
 
 현재 구현 (commit `c99e369` + 이메일 게이트 전환): NextAuth v5 + Prisma

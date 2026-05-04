@@ -4,6 +4,11 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useCompanyStore } from '@/store/company-store';
 import type { CompanyFinancialData } from '@/types/company';
+import {
+  fetchAnthropicConfig,
+  fileToBase64,
+  extractFinanceFromPdfDirect,
+} from '@/lib/anthropic-browser';
 
 type Step = 'idle' | 'uploading' | 'extracting' | 'saving' | 'done' | 'error';
 
@@ -77,12 +82,50 @@ export default function HomePage() {
 
   const processPdfFile = useCallback(
     async (file: File) => {
-      // 1. PDF 직접 업로드 → AI 분석 (Anthropic은 native PDF 입력, 그 외는 서버에서 텍스트 추출 후 분석)
+      const provider = ocrConverting ? 'anthropic' : aiProvider;
+
+      // ⚠️ TEMPORARY: Anthropic + PDF 는 Vercel 60s timeout 우회를 위해 client-direct
+      // 호출. 자세한 내용은 src/lib/anthropic-browser.ts 머리말. 다른 provider 는
+      // 기존 server multipart 경로 유지.
+      if (provider === 'anthropic') {
+        setState((s) => ({ ...s, step: 'uploading', message: '파일 준비 중...' }));
+        const [config, pdfBase64] = await Promise.all([
+          fetchAnthropicConfig(),
+          fileToBase64(file),
+        ]);
+
+        setState((s) => ({
+          ...s,
+          step: 'extracting',
+          message: 'AI 분석 중... (1~5분 소요, 페이지 수에 따라 다름)',
+        }));
+        const data = (await extractFinanceFromPdfDirect({
+          pdfBase64,
+          apiKey: config.apiKey,
+          model: config.model,
+          system: config.system,
+        })) as CompanyFinancialData;
+
+        setState((s) => ({ ...s, step: 'saving', message: '데이터 저장 중...' }));
+        const saveRes = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...data, provider: 'anthropic' }),
+        });
+        if (!saveRes.ok) throw new Error('데이터 저장 실패');
+
+        setCompanyData(data);
+        await loadCompanyList();
+        setState((s) => ({ ...s, step: 'done', message: '완료!', result: data }));
+        return;
+      }
+
+      // 비-Anthropic provider — 기존 server multipart 경로
       setState((s) => ({ ...s, step: 'uploading', message: '파일 업로드 중...' }));
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('provider', ocrConverting ? 'anthropic' : aiProvider);
+      formData.append('provider', provider);
 
       setState((s) => ({ ...s, step: 'extracting', message: 'AI 분석 중... (1~2분 소요)' }));
 
@@ -92,30 +135,28 @@ export default function HomePage() {
       try {
         extractData = JSON.parse(extractText);
       } catch {
-        // JSON이 아닌 응답 — Vercel 함수 timeout/crash, 본문 size 초과 등 인프라 레벨 오류일 가능성
         if (extractRes.status === 504 || extractRes.status === 408) {
-          throw new Error('분석 시간이 초과되었습니다. PDF가 크거나 페이지 수가 많을 때 발생합니다. 더 작은 PDF로 시도해 주세요.');
+          throw new Error('분석 시간이 초과되었습니다. Anthropic provider 또는 OCR converting 옵션을 사용해 주세요 (브라우저 직접 호출로 timeout 회피).');
         }
         if (extractRes.status === 413) {
           throw new Error('PDF가 너무 큽니다 (Vercel Hobby plan 본문 한도 4.5MB).');
         }
         if (extractRes.status === 500) {
-          throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도하거나 더 작은 PDF로 시도해 주세요.');
+          throw new Error('서버 오류가 발생했습니다. Anthropic provider 또는 OCR converting 옵션을 사용해 주세요.');
         }
-        throw new Error(`예상치 못한 응답 (HTTP ${extractRes.status}). PDF가 크거나 분석 시간이 길어졌을 수 있습니다.`);
+        throw new Error(`예상치 못한 응답 (HTTP ${extractRes.status}).`);
       }
       if (!extractRes.ok) {
         throw new Error((extractData.error as string) || `AI 분석 실패 (HTTP ${extractRes.status})`);
       }
       const companyResult = extractData.data as CompanyFinancialData;
 
-      // 2. 저장
       setState((s) => ({ ...s, step: 'saving', message: '데이터 저장 중...' }));
 
       const saveRes = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...companyResult, provider: aiProvider }),
+        body: JSON.stringify({ ...companyResult, provider }),
       });
       if (!saveRes.ok) throw new Error('데이터 저장 실패');
 

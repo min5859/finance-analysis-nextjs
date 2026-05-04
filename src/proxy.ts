@@ -20,8 +20,12 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // 인증 안 됐으면 /login 으로
+  // 인증 안 됐을 때
   if (!req.auth) {
+    // API 라우트는 HTML redirect 대신 JSON 401 — 클라이언트 fetch 가 깔끔하게 처리 가능
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('callbackUrl', pathname);
