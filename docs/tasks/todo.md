@@ -42,14 +42,11 @@
 
 ## B. DB 관련 — 명확히 누락된 기능 / 잠재 이슈
 
-- [ ] **DB 데이터 삭제 기능 (현재 전무)**
-  - API에 `DELETE` 핸들러 없음, 클라이언트에 삭제 호출 없음. 한번 저장되면 Prisma Studio/SQL로만 제거 가능.
-  - 다행히 `Company → FinancialStatement / Analysis → Valuation` 모두 `onDelete: Cascade` 설정되어 있어 구현은 가벼움.
-  - 작업 항목:
-    - [ ] `src/app/api/companies/[name]/route.ts`에 `DELETE` 핸들러 추가
-    - [ ] 사이드바/summary 페이지에 휴지통 아이콘 + 확인 다이얼로그 (회사명 직접 입력 가드 권장)
-    - [ ] 삭제 후 Zustand `company-store`에서 선택 회사 초기화 + 라우터 리프레시
-    - [ ] (옵션) 세밀한 단위 삭제 — 특정 연도 재무제표만, 특정 provider 분석만
+- [x] **DB 데이터 삭제 기능** *(2026-05-04 완료, commit `a9a8d77`)*
+  - `src/app/api/companies/[name]/route.ts`에 `DELETE` 핸들러 추가 (Cascade로 analysis/valuation 자동 삭제, P2025 → 404)
+  - Sidebar에 휴지통 버튼 + 회사명 입력 가드 (`window.prompt`)
+  - 삭제 후 `clearData()` + `loadCompanyList()` + `router.refresh()`
+  - **남은 옵션**: 세밀한 단위 삭제 (특정 연도/provider) — 필요해질 때 추가
 
 - [ ] **`analyses` 테이블 누적 이슈**
   - 같은 회사를 여러 번 분석하면 `prisma.analysis.create`만 호출되어 row가 무한 누적됨.
@@ -65,15 +62,12 @@
     - [ ] 정규화 활성화 vs 모델 제거 방향 결정
     - [ ] (활성화 시) 마이그레이션 + 저장/조회 경로 작성
 
-- [ ] **`provider` 하드코딩**
-  - `companies/route.ts:82`에서 `provider: 'anthropic'` 고정. 멀티 프로바이더(`ai-client`는 Anthropic/DeepSeek 지원)가 DB 레벨에 반영 안 됨.
-  - 작업 항목:
-    - [ ] POST 페이로드에서 실제 사용된 provider를 받아 저장하도록 수정
+- [x] **`provider` 하드코딩** *(2026-05-04 완료, commit `5a6efc5`)*
+  - `companySaveSchema`에 `provider` 추가 (optional, 4종 enum), `data.provider ?? 'anthropic'` fallback
+  - 3개 caller (`page.tsx` ×2, `OptimizedDataView.tsx`)가 store의 `aiProvider`를 페이로드에 포함하도록 수정
 
-- [ ] **`valuation` 저장이 silent best-effort**
-  - `valuation/route.ts:80-82` — DB 저장 실패해도 빈 catch로 무시. 의도된 동작인지, 로깅이라도 필요한지 확인.
-  - 작업 항목:
-    - [ ] 의도 확인 후 최소한 `console.error` 또는 `handleApiError` 호출
+- [x] **`valuation` 저장이 silent best-effort** *(2026-05-04 완료, commit `c790b58`)*
+  - `catch (err) { console.error('[API:valuation] DB save failed ...', err); }` 로 변경. 응답은 그대로 반환 (best-effort 의도 보존).
 
 ## C. 본 세션 컨텍스트 (재개 시 참고)
 
