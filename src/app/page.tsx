@@ -25,6 +25,8 @@ const STEP_LABELS: Record<Step, string> = {
 
 const STEPS_ORDER: Step[] = ['uploading', 'extracting', 'saving', 'done'];
 
+const MAX_UPLOAD_SIZE = 32 * 1024 * 1024; // Anthropic PDF API hard limit. ⚠️ Vercel Hobby is 4.5MB; raise plan if needed.
+
 export default function HomePage() {
   const { companyData, setCompanyData, loadCompanyList, aiProvider } = useCompanyStore();
   const [state, setState] = useState<ProcessState>({
@@ -33,6 +35,7 @@ export default function HomePage() {
     result: null,
     error: null,
   });
+  const [ocrConverting, setOcrConverting] = useState(false);
 
   const resetState = useCallback(() => {
     setState({
@@ -78,7 +81,7 @@ export default function HomePage() {
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('provider', aiProvider);
+      formData.append('provider', ocrConverting ? 'anthropic' : aiProvider);
 
       setState((s) => ({ ...s, step: 'extracting', message: 'AI 분석 중... (1~2분 소요)' }));
 
@@ -110,7 +113,7 @@ export default function HomePage() {
 
       setState((s) => ({ ...s, step: 'done', message: '완료!', result: companyResult }));
     },
-    [setCompanyData, loadCompanyList, aiProvider],
+    [setCompanyData, loadCompanyList, aiProvider, ocrConverting],
   );
 
   const onDrop = useCallback(
@@ -146,7 +149,7 @@ export default function HomePage() {
       'application/json': ['.json'],
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
+    maxSize: MAX_UPLOAD_SIZE,
     disabled: state.step !== 'idle' && state.step !== 'done' && state.step !== 'error',
   });
 
@@ -179,9 +182,25 @@ export default function HomePage() {
     <div className="py-8">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">기업 재무 분석 시스템</h2>
-        <p className="text-gray-500 mb-8 text-center">
+        <p className="text-gray-500 mb-6 text-center">
           JSON/PDF 파일을 업로드하거나 사이드바에서 기업을 선택하세요.
         </p>
+
+        {/* OCR 강제 옵션 */}
+        {state.step === 'idle' && (
+          <label className="flex items-start gap-2 mb-4 px-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={ocrConverting}
+              onChange={(e) => setOcrConverting(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-gray-700">
+              <span className="font-medium">OCR converting</span>
+              <span className="text-gray-500"> — 스캔된 PDF는 체크하세요. 사이드바 설정과 무관하게 Anthropic으로 분석합니다.</span>
+            </span>
+          </label>
+        )}
 
         {/* 드롭존 */}
         <div
@@ -203,7 +222,7 @@ export default function HomePage() {
           ) : (
             <>
               <p className="text-gray-600 font-medium">파일을 드래그하거나 클릭하여 선택</p>
-              <p className="text-sm text-gray-400 mt-1">PDF (재무제표) 또는 JSON (분석 데이터) / 최대 10MB</p>
+              <p className="text-sm text-gray-400 mt-1">PDF (재무제표) 또는 JSON (분석 데이터) / 최대 32MB</p>
             </>
           )}
         </div>
