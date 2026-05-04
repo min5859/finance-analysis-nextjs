@@ -48,19 +48,14 @@
   - 삭제 후 `clearData()` + `loadCompanyList()` + `router.refresh()`
   - **남은 옵션**: 세밀한 단위 삭제 (특정 연도/provider) — 필요해질 때 추가
 
-- [ ] **`analyses` 테이블 누적 이슈**
-  - 같은 회사를 여러 번 분석하면 `prisma.analysis.create`만 호출되어 row가 무한 누적됨.
-  - `[name]/route.ts`는 `orderBy: { createdAt: 'desc' }` + `findFirst`로 최신만 읽음 → 과거 row는 사용처 없이 쌓이기만 함.
-  - 작업 항목:
-    - [ ] 정책 결정: (a) 같은 `(companyId, reportYear, provider)`는 upsert로 갱신, (b) 최신 N개만 유지, (c) 히스토리로 의도적 보존
-    - [ ] 정책에 따라 `companies/route.ts:78` 수정 또는 정리 작업 추가
+- [x] **`analyses` 테이블 누적 이슈** *(2026-05-04 완료, 정책 (a) Upsert 채택)*
+  - `Analysis` 모델에 `@@unique([companyId, reportYear, provider])` 추가 (마이그레이션 `20260504081523_add_analyses_unique_constraint`)
+  - `companies/route.ts`의 `analysis.create` → `analysis.upsert` 전환
+  - **운영 적용 미완**: `prisma migrate deploy`를 운영 DB에 실행해야 함 (사용자 확인 후 진행)
 
-- [ ] **`financial_statements` 모델 미사용 (Dead Schema)**
-  - `prisma/schema.prisma`에 정의돼 있지만 코드 어디에서도 `prisma.financialStatement.*` 호출 없음.
-  - 모든 BS/IS/CF가 `analyses.financialData` JSON에 묶여 들어감.
-  - 작업 항목:
-    - [ ] 정규화 활성화 vs 모델 제거 방향 결정
-    - [ ] (활성화 시) 마이그레이션 + 저장/조회 경로 작성
+- [ ] **`financial_statements` 모델 미사용 (Dead Schema)** — *2026-05-04 결정 보류 ("일단 그냥 두기")*
+  - 운영 데이터 0행, 코드 미사용 상태로 그대로 둠.
+  - 향후 다년도 비교 / raw 데이터 분리 저장이 필요해질 때 재검토 (활성화 vs 제거).
 
 - [x] **`provider` 하드코딩** *(2026-05-04 완료, commit `5a6efc5`)*
   - `companySaveSchema`에 `provider` 추가 (optional, 4종 enum), `data.provider ?? 'anthropic'` fallback
