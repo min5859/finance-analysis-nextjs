@@ -78,13 +78,12 @@ JSON / PDF / DART 3개 진입 플로우의 실제 동작을 코드 레벨로 확
     - [ ] 동시성 제어 — Promise.all 병렬 vs 순차. 순차 권장 (LLM 비용/rate-limit)
     - [ ] 일부 실패 시 정책: 나머지 계속 vs 전체 중단. 각 파일 결과 collated 표시.
 
-- [ ] **PDF 공시자료까지 AI 분석에 포함**
-  - 현재: `src/lib/financial-page-detector.ts`가 BS / IS / CF / 자본변동표 4종 페이지만 키워드 스코어링으로 골라 AI에 전달. 사업보고서 PDF의 감사의견·이사회 보고·사업의 내용·주석·위험요인 등 **공시 본문은 거의 전부 잘림**.
-  - 사용자 기대: 공시자료(주석, 감사의견 등)도 AI 분석에 포함되어 인사이트 풍부화.
-  - 작업 항목:
-    - [ ] 옵션 1: 디텍터를 확장해 "주석", "감사보고서", "사업의 내용" 등의 페이지 종류도 잡도록 키워드 추가 (선별적 확장)
-    - [ ] 옵션 2: 사용자 토글 ("재무제표만" vs "전체 PDF") — 후자는 토큰 비용 ↑↑
-    - [ ] 토큰 비용 가드: `MAX_INPUT_CHARS`(현재 20_000자) 상향 시 잘림 동작 확인 + provider별 context window 차이 고려
+- [x] **PDF 공시자료까지 AI 분석에 포함** *(2026-05-04 Phase B로 자동 해결, commit `324cfe6`)*
+  - 원래 문제: 키워드 기반 detector가 BS/IS/CF/자본변동표 4종 페이지만 추출 → 주석/감사의견/사업내용은 잘림.
+  - **해결 경로**: Phase B로 detector 자체 (`src/lib/financial-page-detector.ts`) 제거. PDF를 통째로 AI에 전달하는 구조로 변경.
+    - Anthropic: PDF 바이너리를 `document` content block으로 직접 전송 → 시각/OCR/주석/감사의견 모두 AI가 본문 그대로 봄
+    - 다른 provider: 서버에서 `pdf-parse`로 전체 페이지 텍스트 → AI (옛 detector 우회)
+  - 토큰 비용 가드: `MAX_INPUT_CHARS=20_000`은 텍스트 fallback 경로에서만 적용. Anthropic PDF 직접 입력은 페이지 수에 비례 (페이지당 ~1.5k vision 토큰).
 
 - [ ] **DART 감사·이사 정보를 AI 분석에 포함**
   - 현재: `useDartData.loadFinancialData`가 `audit` 액션으로 감사 정보를 fetch하지만, `OptimizedDataView`(`features/dart/components/OptimizedDataView.tsx:44`)가 AI에 보내는 페이로드는 재무 JSON(`jsonStr`)만. `auditData`는 별도 탭에서 화면 표시만 됨.
@@ -93,6 +92,27 @@ JSON / PDF / DART 3개 진입 플로우의 실제 동작을 코드 레벨로 확
     - [ ] `OptimizedDataView`의 `extract` 호출 페이로드에 `auditData`(감사인·감사의견·감사보수 등) 합쳐 보내기
     - [ ] `prompt.txt` 또는 `extract` 라우트의 시스템 프롬프트에 "감사 정보 활용 지침" 추가
     - [ ] `dart` 액션을 추가해 사업보고서 본문(IRDS 외 다른 공시) 같이 가져올지 검토 (스코프 ↑)
+
+## E. AI 분석 파이프라인 개선 *(2026-05-04 완료, `next_job.md` 기반)*
+
+원래 `next_job.md`에 사용자가 적어두신 두 가지 개선 요청 — OCR 안 된 PDF 분석 실패 + AI JSON 출력 깨짐 — 을 두 단계로 처리.
+
+- [x] **Phase A — Provider-native structured JSON output** *(commit `4b35d7a`)*
+  - 이전: `chatCompletion()` + 정규식 기반 `extractJsonFromAIResponse()` 후처리. 자유 텍스트 생성이라 코드블록 누락/trailing comma/잘림 등으로 자주 깨짐.
+  - 이후: `chatCompletionJson()` 신설. provider별 native 강제:
+    - Anthropic: `tools` + `tool_choice: { type: 'tool', name }` (tool_use)
+    - OpenAI: `response_format: json_schema` (schema 지정 시) / `json_object`
+    - Gemini, DeepSeek: `response_format: json_object`
+  - `parse-ai-response.ts` 삭제. `/api/extract`, `/api/valuation`이 새 함수 사용.
+
+- [x] **Phase B — PDF 직접 AI 입력** *(commits `324cfe6`, `3a54846`, `5171bc5`)*
+  - 이전: rule-based detector로 재무 페이지만 골라 텍스트만 AI에 전달. OCR 안 된 스캔본은 빈 텍스트, 누락도 잦음.
+  - 이후: PDF 바이너리를 `/api/extract`에 multipart로 직접 업로드.
+    - Anthropic: `document` content block으로 PDF 전달 → 모델이 자체 vision+OCR
+    - 그 외: 서버에서 `pdf-parse` 텍스트 fallback
+  - UI: dropzone 32MB 한도(이전 10MB) + "OCR converting" 체크박스 (체크 시 sidebar 설정 무시하고 anthropic 강제) + 분석 시작 확인 단계
+  - 후속 정리: `report_year`/`company_code`가 number로 와도 통과하도록 `companySaveSchema` 강건화 (commit `5171bc5`)
+  - 비용: Sonnet 4.6 기준 30페이지 PDF ≈ $0.20~$0.34 / 1건. ⚠️ Vercel Hobby plan은 4.5MB body 한계라 32MB까지 쓰려면 Pro 필요.
 
 ## D. 본 세션 컨텍스트 (재개 시 참고)
 
