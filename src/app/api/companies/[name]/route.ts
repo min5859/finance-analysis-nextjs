@@ -25,3 +25,21 @@ export async function GET(
     return handleApiError(err, 'companies-detail');
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ name: string }> },
+) {
+  const { name } = await params;
+
+  try {
+    // 관련 financial_statements / analyses / valuations는 onDelete: Cascade로 자동 삭제
+    await prisma.company.delete({ where: { id: name } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    if ((err as { code?: string }).code === 'P2025') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    return handleApiError(err, 'companies-delete');
+  }
+}

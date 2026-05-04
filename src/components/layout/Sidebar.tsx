@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { navOnlyItems, reportSlides } from '@/lib/slide-config';
 
 const slideLinks = [
@@ -13,12 +13,54 @@ const slideLinks = [
 ];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const { companies, loadCompanyList, loadCompany, companyData, aiProvider, setAiProvider } = useCompanyStore();
+  const {
+    companies,
+    loadCompanyList,
+    loadCompany,
+    companyData,
+    selectedCompany,
+    clearData,
+    aiProvider,
+    setAiProvider,
+  } = useCompanyStore();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadCompanyList();
   }, [loadCompanyList]);
+
+  const handleDelete = async () => {
+    if (!selectedCompany || !companyData) return;
+    const expected = companyData.company_name;
+    const typed = window.prompt(
+      `정말 "${expected}" 회사를 삭제하시겠습니까?\n관련된 모든 분석 데이터가 함께 삭제됩니다.\n\n확인을 위해 회사명을 정확히 입력하세요:`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== expected) {
+      window.alert('회사명이 일치하지 않아 삭제를 취소했습니다.');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${encodeURIComponent(selectedCompany)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `삭제 실패 (${res.status})`);
+      }
+      clearData();
+      await loadCompanyList();
+      router.refresh();
+    } catch (err) {
+      window.alert((err as Error).message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
@@ -64,9 +106,20 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </select>
         {companyData && (
-          <p className="text-xs text-emerald-600 mt-1">
-            {companyData.company_name} 데이터 로드됨
-          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-emerald-600">
+              {companyData.company_name} 데이터 로드됨
+            </p>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting || !selectedCompany}
+              title="선택한 회사 삭제"
+              className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-1"
+            >
+              {isDeleting ? '삭제중...' : '🗑️'}
+            </button>
+          </div>
         )}
       </div>
 
