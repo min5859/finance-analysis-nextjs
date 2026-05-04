@@ -64,7 +64,37 @@
 - [x] **`valuation` 저장이 silent best-effort** *(2026-05-04 완료, commit `c790b58`)*
   - `catch (err) { console.error('[API:valuation] DB save failed ...', err); }` 로 변경. 응답은 그대로 반환 (best-effort 의도 보존).
 
-## C. 본 세션 컨텍스트 (재개 시 참고)
+## C. 기존 플로우 — 인식 vs 실제 동작 갭 *(2026-05-04 검증 결과)*
+
+JSON / PDF / DART 3개 진입 플로우의 실제 동작을 코드 레벨로 확인한 결과, 사용자 인식과 다른 부분 3가지 발견. 각 항목은 우선순위 미정.
+
+- [ ] **PDF 다중 업로드 지원**
+  - 현재: `src/app/page.tsx:190` `useDropzone({ maxFiles: 1 })`, `onDrop`은 `acceptedFiles[0]`만 처리. 단일 파일 강제.
+  - 사용자 기대: 여러 PDF를 한 번에 드래그해도 모두 분석 → 각 회사별로 저장.
+  - 작업 항목:
+    - [ ] `maxFiles` 해제 (또는 적정 상한 — 동시 LLM 호출 비용 고려해 5개 정도)
+    - [ ] `onDrop`을 acceptedFiles 순회 루프로 변경. 파일별 `processPdfFile` 호출.
+    - [ ] 진행 상태 UI를 파일별 진행으로 확장 (현재는 단일 ProcessState)
+    - [ ] 동시성 제어 — Promise.all 병렬 vs 순차. 순차 권장 (LLM 비용/rate-limit)
+    - [ ] 일부 실패 시 정책: 나머지 계속 vs 전체 중단. 각 파일 결과 collated 표시.
+
+- [ ] **PDF 공시자료까지 AI 분석에 포함**
+  - 현재: `src/lib/financial-page-detector.ts`가 BS / IS / CF / 자본변동표 4종 페이지만 키워드 스코어링으로 골라 AI에 전달. 사업보고서 PDF의 감사의견·이사회 보고·사업의 내용·주석·위험요인 등 **공시 본문은 거의 전부 잘림**.
+  - 사용자 기대: 공시자료(주석, 감사의견 등)도 AI 분석에 포함되어 인사이트 풍부화.
+  - 작업 항목:
+    - [ ] 옵션 1: 디텍터를 확장해 "주석", "감사보고서", "사업의 내용" 등의 페이지 종류도 잡도록 키워드 추가 (선별적 확장)
+    - [ ] 옵션 2: 사용자 토글 ("재무제표만" vs "전체 PDF") — 후자는 토큰 비용 ↑↑
+    - [ ] 토큰 비용 가드: `MAX_INPUT_CHARS`(현재 20_000자) 상향 시 잘림 동작 확인 + provider별 context window 차이 고려
+
+- [ ] **DART 감사·이사 정보를 AI 분석에 포함**
+  - 현재: `useDartData.loadFinancialData`가 `audit` 액션으로 감사 정보를 fetch하지만, `OptimizedDataView`(`features/dart/components/OptimizedDataView.tsx:44`)가 AI에 보내는 페이로드는 재무 JSON(`jsonStr`)만. `auditData`는 별도 탭에서 화면 표시만 됨.
+  - 사용자 기대(추정): "공시자료"가 AI 분석에 반영.
+  - 작업 항목:
+    - [ ] `OptimizedDataView`의 `extract` 호출 페이로드에 `auditData`(감사인·감사의견·감사보수 등) 합쳐 보내기
+    - [ ] `prompt.txt` 또는 `extract` 라우트의 시스템 프롬프트에 "감사 정보 활용 지침" 추가
+    - [ ] `dart` 액션을 추가해 사업보고서 본문(IRDS 외 다른 공시) 같이 가져올지 검토 (스코프 ↑)
+
+## D. 본 세션 컨텍스트 (재개 시 참고)
 
 - PDF 내보내기는 **이미 구현됨** (`src/lib/pdf-generator.ts` — `downloadPdf`, `downloadFullReportPdf`). 중복 제안 금지.
 - 사이드바에 회사 13개 분석 페이지가 있고, 슬라이드 컴포넌트 + 멀티 AI 클라이언트 + Prisma DB는 갖춰진 상태.
