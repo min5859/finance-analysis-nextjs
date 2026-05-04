@@ -5,20 +5,11 @@ import { useDropzone } from 'react-dropzone';
 import { useCompanyStore } from '@/store/company-store';
 import type { CompanyFinancialData } from '@/types/company';
 
-type Step = 'idle' | 'uploading' | 'detecting' | 'extracting' | 'saving' | 'done' | 'error';
-
-interface DetectedPage {
-  pageNumber: number;
-  statementType: string;
-  score: number;
-  matchedAccounts: number;
-}
+type Step = 'idle' | 'uploading' | 'extracting' | 'saving' | 'done' | 'error';
 
 interface ProcessState {
   step: Step;
   message: string;
-  detectedPages: DetectedPage[];
-  totalPages: number;
   result: CompanyFinancialData | null;
   error: string | null;
 }
@@ -26,22 +17,19 @@ interface ProcessState {
 const STEP_LABELS: Record<Step, string> = {
   idle: '',
   uploading: '파일 업로드 중...',
-  detecting: '재무제표 페이지 탐지 중...',
   extracting: 'AI 분석 중... (1~2분 소요)',
   saving: '데이터 저장 중...',
   done: '완료!',
   error: '오류 발생',
 };
 
-const STEPS_ORDER: Step[] = ['uploading', 'detecting', 'extracting', 'saving', 'done'];
+const STEPS_ORDER: Step[] = ['uploading', 'extracting', 'saving', 'done'];
 
 export default function HomePage() {
   const { companyData, setCompanyData, loadCompanyList, aiProvider } = useCompanyStore();
   const [state, setState] = useState<ProcessState>({
     step: 'idle',
     message: '',
-    detectedPages: [],
-    totalPages: 0,
     result: null,
     error: null,
   });
@@ -50,8 +38,6 @@ export default function HomePage() {
     setState({
       step: 'idle',
       message: '',
-      detectedPages: [],
-      totalPages: 0,
       result: null,
       error: null,
     });
@@ -87,44 +73,16 @@ export default function HomePage() {
 
   const processPdfFile = useCallback(
     async (file: File) => {
-      // 1. 업로드 + 페이지 탐지
+      // 1. PDF 직접 업로드 → AI 분석 (Anthropic은 native PDF 입력, 그 외는 서버에서 텍스트 추출 후 분석)
       setState((s) => ({ ...s, step: 'uploading', message: '파일 업로드 중...' }));
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('provider', aiProvider);
 
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      const uploadText = await uploadRes.text();
-      let uploadData: { text: string; totalPages: number; detectedPages: DetectedPage[]; error?: string };
-      try {
-        uploadData = JSON.parse(uploadText);
-      } catch {
-        throw new Error(`업로드 응답 파싱 실패: ${uploadText.substring(0, 100) || '빈 응답'}`);
-      }
-      if (!uploadRes.ok) {
-        throw new Error((uploadData.error as string) || '업로드 실패');
-      }
-
-      setState((s) => ({
-        ...s,
-        step: 'detecting',
-        message: `${uploadData.totalPages}페이지 중 ${uploadData.detectedPages.length}개 재무제표 페이지 탐지`,
-        detectedPages: uploadData.detectedPages,
-        totalPages: uploadData.totalPages,
-      }));
-
-      // 2. AI 구조화
       setState((s) => ({ ...s, step: 'extracting', message: 'AI 분석 중... (1~2분 소요)' }));
 
-      const extractRes = await fetch('/api/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: uploadData.text,
-          type: 'pdf_text',
-          provider: aiProvider,
-        }),
-      });
+      const extractRes = await fetch('/api/extract', { method: 'POST', body: formData });
       const extractText = await extractRes.text();
       let extractData: { data: CompanyFinancialData; error?: string };
       try {
@@ -137,7 +95,7 @@ export default function HomePage() {
       }
       const companyResult = extractData.data as CompanyFinancialData;
 
-      // 3. 저장
+      // 2. 저장
       setState((s) => ({ ...s, step: 'saving', message: '데이터 저장 중...' }));
 
       const saveRes = await fetch('/api/companies', {
@@ -290,24 +248,6 @@ export default function HomePage() {
             {/* 상세 메시지 */}
             {state.message && state.step !== 'error' && (
               <p className="text-sm text-gray-500 mb-3">{state.message}</p>
-            )}
-
-            {/* 탐지된 페이지 정보 */}
-            {state.detectedPages.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                <p className="text-xs font-medium text-gray-600 mb-2">탐지된 재무제표 페이지</p>
-                <div className="flex flex-wrap gap-2">
-                  {state.detectedPages.map((dp) => (
-                    <span
-                      key={dp.pageNumber}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded border border-gray-200 text-xs"
-                    >
-                      <span className="font-medium text-indigo-600">p.{dp.pageNumber}</span>
-                      <span className="text-gray-400">{dp.statementType}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
             )}
 
             {/* 에러 */}

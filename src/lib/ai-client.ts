@@ -39,7 +39,18 @@ interface ChatCompletionJsonParams {
   jsonSchema?: Record<string, unknown>;
   /** Anthropic tool name (also used as OpenAI json_schema name). */
   toolName?: string;
+  /** Binary attachments (currently base64-encoded PDFs). Only Anthropic supports native PDF input; other providers ignore. */
+  attachments?: PdfAttachment[];
 }
+
+export interface PdfAttachment {
+  kind: 'pdf';
+  /** base64-encoded PDF bytes (no data URL prefix). */
+  base64: string;
+}
+
+/** Providers that accept PDF binaries directly (vision + OCR built-in). */
+export const PROVIDERS_WITH_PDF_INPUT: ReadonlyArray<AIProvider> = ['anthropic'];
 
 export async function chatCompletion({
   provider,
@@ -107,6 +118,7 @@ export async function chatCompletionJson<T = unknown>({
   maxTokens = 8192,
   jsonSchema,
   toolName = 'extract_data',
+  attachments,
 }: ChatCompletionJsonParams): Promise<{ data: T | null; error: NextResponse | null }> {
   const resolvedModel = model || DEFAULT_MODELS[provider];
 
@@ -117,10 +129,22 @@ export async function chatCompletionJson<T = unknown>({
     }
     const client = new Anthropic({ apiKey: key });
     const inputSchema = (jsonSchema ?? { type: 'object', additionalProperties: true }) as Anthropic.Tool.InputSchema;
+
+    const userContent: Anthropic.ContentBlockParam[] = [];
+    for (const att of attachments ?? []) {
+      if (att.kind === 'pdf') {
+        userContent.push({
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: att.base64 },
+        });
+      }
+    }
+    userContent.push({ type: 'text', text: userMessage });
+
     const response = await client.messages.create({
       model: resolvedModel,
       system,
-      messages: [{ role: 'user', content: userMessage }],
+      messages: [{ role: 'user', content: userContent }],
       tools: [{
         name: toolName,
         description: 'Return the requested analysis as a structured JSON object.',
