@@ -14,6 +14,9 @@ import { handleApiError } from '@/lib/api-error';
 const MAX_PDF_SIZE = 32 * 1024 * 1024; // Anthropic document upload upper bound
 const PROVIDERS = ['anthropic', 'openai', 'gemini', 'deepseek'] as const;
 
+// Vercel: 기본 10초 → 비전 PDF 분석은 보통 30~60초. Hobby plan max 60s, Pro plan max 300s.
+export const maxDuration = 60;
+
 const jsonBodySchema = z.object({
   text: z.string().min(1, '텍스트가 비어있습니다.'),
   provider: z.enum(PROVIDERS).optional(),

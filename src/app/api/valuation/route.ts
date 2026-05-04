@@ -4,6 +4,9 @@ import { chatCompletionJson, type AIProvider } from '@/lib/ai-client';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-error';
 
+// AI 호출이 길어 기본 10초로는 부족. Hobby plan max 60s.
+export const maxDuration = 60;
+
 const valuationSchema = z.object({
   company_info: z.object({
     corp_name: z.string(),

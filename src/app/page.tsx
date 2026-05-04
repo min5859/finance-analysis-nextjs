@@ -92,10 +92,20 @@ export default function HomePage() {
       try {
         extractData = JSON.parse(extractText);
       } catch {
-        throw new Error(`AI 응답 파싱 실패: ${extractText.substring(0, 100) || '빈 응답'}`);
+        // JSON이 아닌 응답 — Vercel 함수 timeout/crash, 본문 size 초과 등 인프라 레벨 오류일 가능성
+        if (extractRes.status === 504 || extractRes.status === 408) {
+          throw new Error('분석 시간이 초과되었습니다. PDF가 크거나 페이지 수가 많을 때 발생합니다. 더 작은 PDF로 시도해 주세요.');
+        }
+        if (extractRes.status === 413) {
+          throw new Error('PDF가 너무 큽니다 (Vercel Hobby plan 본문 한도 4.5MB).');
+        }
+        if (extractRes.status === 500) {
+          throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도하거나 더 작은 PDF로 시도해 주세요.');
+        }
+        throw new Error(`예상치 못한 응답 (HTTP ${extractRes.status}). PDF가 크거나 분석 시간이 길어졌을 수 있습니다.`);
       }
       if (!extractRes.ok) {
-        throw new Error((extractData.error as string) || 'AI 분석 실패');
+        throw new Error((extractData.error as string) || `AI 분석 실패 (HTTP ${extractRes.status})`);
       }
       const companyResult = extractData.data as CompanyFinancialData;
 
