@@ -1,15 +1,24 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { SessionProvider } from 'next-auth/react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
+  // 인증 화면에는 사이드바/헤더를 띄우지 않음
+  if (pathname === '/login') {
+    return <SessionProvider>{children}</SessionProvider>;
+  }
+
   return (
+    <SessionProvider>
     <div className="flex min-h-screen">
       {/* Mobile backdrop */}
       {sidebarOpen && (
@@ -38,5 +47,6 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         </div>
       </main>
     </div>
+    </SessionProvider>
   );
 }

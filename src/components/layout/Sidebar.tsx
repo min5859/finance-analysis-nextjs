@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
 import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { navOnlyItems, reportSlides } from '@/lib/slide-config';
 import type { AIProvider } from '@/lib/ai-client';
 
@@ -16,6 +17,7 @@ const slideLinks = [
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
   const {
     companies,
     loadCompanyList,
@@ -130,6 +132,22 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
       </div>
+
+      {/* User + Logout */}
+      {session?.user && (
+        <div className="p-3 border-b border-gray-200 flex items-center justify-between gap-2">
+          <span className="text-xs text-gray-600 truncate" title={session.user.email ?? ''}>
+            {session.user.email ?? session.user.name ?? '로그인됨'}
+          </span>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="text-xs text-gray-500 hover:text-red-600 underline-offset-2 hover:underline shrink-0"
+          >
+            로그아웃
+          </button>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2">
