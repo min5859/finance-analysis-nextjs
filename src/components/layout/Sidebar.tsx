@@ -65,14 +65,21 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <Link href="/" className="block p-4 border-b border-gray-200">
-        <Image
-          src="/04.M&AIKorea_CI_hor_transparent-04(white).png"
-          alt="M&AI Korea"
-          width={224}
-          height={48}
-          className="w-full bg-gray-900 rounded p-2"
-        />
+      <Link
+        href="/"
+        aria-label="홈으로 이동"
+        className="block p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <div className="bg-gray-900 rounded p-2 flex items-center justify-center">
+          <Image
+            src="/04.M&AIKorea_CI_hor_transparent-04(white).png"
+            alt="M&AI Korea"
+            width={224}
+            height={48}
+            className="block w-full h-auto"
+            priority
+          />
+        </div>
       </Link>
 
       {/* AI Provider */}
