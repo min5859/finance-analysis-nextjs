@@ -28,7 +28,7 @@ const STEPS_ORDER: Step[] = ['uploading', 'extracting', 'saving', 'done'];
 const MAX_UPLOAD_SIZE = 32 * 1024 * 1024; // Anthropic PDF API hard limit. ⚠️ Vercel Hobby is 4.5MB; raise plan if needed.
 
 export default function HomePage() {
-  const { companyData, setCompanyData, loadCompanyList, aiProvider } = useCompanyStore();
+  const { companyData, setCompanyData, loadCompanyList, aiProvider, clearData } = useCompanyStore();
   const [state, setState] = useState<ProcessState>({
     step: 'idle',
     message: '',
@@ -36,6 +36,7 @@ export default function HomePage() {
     error: null,
   });
   const [ocrConverting, setOcrConverting] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const resetState = useCallback(() => {
     setState({
@@ -117,30 +118,47 @@ export default function HomePage() {
   );
 
   const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
+    (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (!file) return;
-
       resetState();
-
-      try {
-        if (file.name.endsWith('.json')) {
-          await processJsonFile(file);
-        } else if (file.name.endsWith('.pdf')) {
-          await processPdfFile(file);
-        } else {
-          throw new Error('PDF 또는 JSON 파일만 지원합니다.');
-        }
-      } catch (err) {
-        setState((s) => ({
-          ...s,
-          step: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        }));
-      }
+      setPendingFile(file);
     },
-    [resetState, processJsonFile, processPdfFile],
+    [resetState],
   );
+
+  const handleStart = useCallback(async () => {
+    if (!pendingFile) return;
+    const file = pendingFile;
+    setPendingFile(null);
+    try {
+      if (file.name.endsWith('.json')) {
+        await processJsonFile(file);
+      } else if (file.name.endsWith('.pdf')) {
+        await processPdfFile(file);
+      } else {
+        throw new Error('PDF 또는 JSON 파일만 지원합니다.');
+      }
+    } catch (err) {
+      setState((s) => ({
+        ...s,
+        step: 'error',
+        error: err instanceof Error ? err.message : String(err),
+      }));
+    }
+  }, [pendingFile, processJsonFile, processPdfFile]);
+
+  const handleCancelPending = useCallback(() => {
+    setPendingFile(null);
+    setOcrConverting(false);
+  }, []);
+
+  const handleNewUpload = useCallback(() => {
+    clearData();
+    resetState();
+    setPendingFile(null);
+    setOcrConverting(false);
+  }, [clearData, resetState]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -150,7 +168,7 @@ export default function HomePage() {
     },
     maxFiles: 1,
     maxSize: MAX_UPLOAD_SIZE,
-    disabled: state.step !== 'idle' && state.step !== 'done' && state.step !== 'error',
+    disabled: pendingFile !== null || (state.step !== 'idle' && state.step !== 'done' && state.step !== 'error'),
   });
 
   const handleDownloadJson = useCallback(() => {
@@ -165,13 +183,19 @@ export default function HomePage() {
   }, [state.result]);
 
   // 데이터 로드 완료 상태
-  if (companyData && state.step === 'idle') {
+  if (companyData && state.step === 'idle' && !pendingFile) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-gray-700 mb-2">
           {companyData.company_name} 데이터가 로드되었습니다.
         </h2>
-        <p className="text-gray-500">왼쪽 목차에서 분석 슬라이드를 선택해주세요.</p>
+        <p className="text-gray-500 mb-6">왼쪽 목차에서 분석 슬라이드를 선택해주세요.</p>
+        <button
+          onClick={handleNewUpload}
+          className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          새 파일 업로드
+        </button>
       </div>
     );
   }
@@ -226,6 +250,37 @@ export default function HomePage() {
             </>
           )}
         </div>
+
+        {/* 선택된 파일 — 분석 시작 대기 */}
+        {pendingFile && state.step === 'idle' && (
+          <div className="mt-4 bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-800 truncate">{pendingFile.name}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {(pendingFile.size / 1024 / 1024).toFixed(2)} MB
+                  {pendingFile.name.toLowerCase().endsWith('.pdf') && (
+                    <> · provider: <span className="font-medium">{ocrConverting ? 'anthropic (OCR 강제)' : aiProvider}</span></>
+                  )}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={handleCancelPending}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleStart}
+                  className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  분석 시작
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 진행 상태 */}
         {state.step !== 'idle' && (

@@ -69,11 +69,11 @@ export class DataLoader {
   }
 
   getInsights(): Insights {
-    return this.data.insights;
+    return this.data.insights ?? ({} as Insights);
   }
 
   getConclusion(): Conclusion {
-    return this.data.conclusion;
+    return this.data.conclusion ?? ({} as Conclusion);
   }
 
   getAllData(): CompanyFinancialData {
