@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import { PDFParse } from 'pdf-parse';
 import {
   chatCompletionJson,
   MAX_INPUT_CHARS,
@@ -31,6 +30,10 @@ function loadPromptAndTemplate() {
 }
 
 async function pdfToText(buffer: Buffer): Promise<string> {
+  // Lazy import: pdf-parse는 pdfjs-dist를 통해 DOMMatrix 등 브라우저 globals를 요구하기 때문에
+  // Vercel serverless 런타임에서 모듈 로드 자체가 실패할 수 있음. 동적 import로 미뤄서
+  // PDF input을 native 지원하는 provider (Anthropic) 경로에서는 아예 호출되지 않게 함.
+  const { PDFParse } = await import('pdf-parse');
   const pdf = new PDFParse({ data: new Uint8Array(buffer) });
   const result = await pdf.getText();
   await pdf.destroy();
@@ -81,10 +84,19 @@ export async function POST(request: Request) {
       }
 
       // Fallback for providers without native PDF input: extract text server-side.
-      const text = await pdfToText(buffer);
+      let text: string;
+      try {
+        text = await pdfToText(buffer);
+      } catch (err) {
+        console.error('[API:extract] pdf-parse failed:', err);
+        return NextResponse.json(
+          { error: 'PDF 텍스트 추출에 실패했습니다 (서버 환경 호환성 이슈). OCR converting 옵션을 켜서 Anthropic으로 분석해 주세요.' },
+          { status: 500 },
+        );
+      }
       if (!text.trim()) {
         return NextResponse.json(
-          { error: 'PDF에서 텍스트를 추출할 수 없습니다 (스캔본 가능성). Anthropic provider로 다시 시도하세요.' },
+          { error: 'PDF에서 텍스트를 추출할 수 없습니다 (스캔본 가능성). OCR converting 옵션을 켜서 Anthropic으로 다시 시도하세요.' },
           { status: 400 },
         );
       }
