@@ -4,11 +4,20 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-error';
 
+const stringOrNumberToString = z.preprocess(
+  (v) => {
+    if (v === null) return undefined;
+    if (typeof v === 'number') return String(v);
+    return v;
+  },
+  z.string().optional(),
+);
+
 const companySaveSchema = z.object({
   company_name: z.string().min(1),
-  company_code: z.string().optional(),
+  company_code: stringOrNumberToString,
   sector: z.string().optional(),
-  report_year: z.string().optional(),
+  report_year: stringOrNumberToString,
   performance_data: z.record(z.string(), z.unknown()).optional(),
   balance_sheet_data: z.record(z.string(), z.unknown()).optional(),
   stability_data: z.record(z.string(), z.unknown()).optional(),
@@ -51,6 +60,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = companySaveSchema.safeParse(body);
     if (!parsed.success) {
+      console.error('[API:companies-save] validation failed:', JSON.stringify(parsed.error.issues));
       return NextResponse.json(
         { error: '유효하지 않은 데이터 형식입니다.', details: parsed.error.issues },
         { status: 400 },
