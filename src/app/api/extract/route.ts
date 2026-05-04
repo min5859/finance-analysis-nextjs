@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import { chatCompletion, MAX_INPUT_CHARS, type AIProvider } from '@/lib/ai-client';
-import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
+import { chatCompletionJson, MAX_INPUT_CHARS, type AIProvider } from '@/lib/ai-client';
 import { handleApiError } from '@/lib/api-error';
 
 const extractSchema = z.object({
@@ -27,19 +26,19 @@ export async function POST(request: Request) {
     const prompt = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, 'utf-8') : '';
     const template = fs.existsSync(templatePath) ? fs.readFileSync(templatePath, 'utf-8') : '{}';
 
-    const { text: responseText, error } = await chatCompletion({
+    const { data, error } = await chatCompletionJson<object>({
       provider: provider as AIProvider,
       system: `${prompt}\n\nJSON 템플릿:\n${template}`,
       userMessage: `다음 재무제표 내용을 분석하여 지정된 JSON 형식으로 변환해주세요. 문서 내용: ${text?.substring(0, MAX_INPUT_CHARS) || ''}`,
       temperature: 0.1,
       maxTokens: 8192,
+      toolName: 'extract_finance_data',
     });
     if (error) return error;
-    if (!responseText) {
+    if (!data) {
       return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
     }
 
-    const data = extractJsonFromAIResponse(responseText);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return handleApiError(err, 'extract');

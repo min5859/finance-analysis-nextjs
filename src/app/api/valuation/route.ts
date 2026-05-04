@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { chatCompletion, type AIProvider } from '@/lib/ai-client';
-import { extractJsonFromAIResponse } from '@/lib/parse-ai-response';
+import { chatCompletionJson, type AIProvider } from '@/lib/ai-client';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-error';
 
@@ -53,19 +52,48 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
 }
 금액 단위는 억원으로 통일하세요.`;
 
-    const { text: responseText, error } = await chatCompletion({
+    const valuationSchemaJson: Record<string, unknown> = {
+      type: 'object',
+      properties: {
+        company: { type: 'string' },
+        ebitda_valuation: {
+          type: 'object',
+          properties: {
+            conservative: { type: 'number' },
+            base: { type: 'number' },
+            optimistic: { type: 'number' },
+          },
+          required: ['conservative', 'base', 'optimistic'],
+        },
+        dcf_valuation: {
+          type: 'object',
+          properties: {
+            conservative: { type: 'number' },
+            base: { type: 'number' },
+            optimistic: { type: 'number' },
+          },
+          required: ['conservative', 'base', 'optimistic'],
+        },
+        assumptions: { type: 'object' },
+        calculations: { type: 'object' },
+        summary: { type: 'string' },
+      },
+      required: ['company', 'ebitda_valuation', 'dcf_valuation', 'summary'],
+    };
+
+    const { data, error } = await chatCompletionJson<object>({
       provider: provider as AIProvider,
       system: '당신은 기업 가치 평가와 M&A 분석을 전문으로 하는 금융 애널리스트입니다.',
       userMessage,
       temperature: 0.2,
       maxTokens: 4000,
+      jsonSchema: valuationSchemaJson,
+      toolName: 'submit_valuation',
     });
     if (error) return error;
-    if (!responseText) {
+    if (!data) {
       return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
     }
-
-    const data = extractJsonFromAIResponse(responseText);
 
     // DB에 밸류에이션 결과 저장 (analysis_id가 있는 경우)
     if (parsed.data.analysis_id) {
