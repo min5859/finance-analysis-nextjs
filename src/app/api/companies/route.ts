@@ -76,12 +76,25 @@ export async function POST(request: Request) {
       },
     });
 
-    await prisma.analysis.create({
-      data: {
+    const reportYear = data.report_year || '';
+    const provider = data.provider ?? 'anthropic';
+    const financialData = data as unknown as Prisma.InputJsonValue;
+    await prisma.analysis.upsert({
+      where: {
+        companyId_reportYear_provider: {
+          companyId: company.id,
+          reportYear,
+          provider,
+        },
+      },
+      create: {
         companyId: company.id,
-        reportYear: data.report_year || '',
-        provider: data.provider ?? 'anthropic',
-        financialData: data as unknown as Prisma.InputJsonValue,
+        reportYear,
+        provider,
+        financialData,
+      },
+      update: {
+        financialData,
       },
     });
 

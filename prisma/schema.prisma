@@ -64,6 +64,7 @@ model Analysis {
   company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   valuations Valuation[]
 
+  @@unique([companyId, reportYear, provider], name: "companyId_reportYear_provider")
   @@index([companyId, reportYear])
   @@map("analyses")
 }
