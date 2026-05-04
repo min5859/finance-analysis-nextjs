@@ -93,6 +93,34 @@ JSON / PDF / DART 3개 진입 플로우의 실제 동작을 코드 레벨로 확
     - [ ] `prompt.txt` 또는 `extract` 라우트의 시스템 프롬프트에 "감사 정보 활용 지침" 추가
     - [ ] `dart` 액션을 추가해 사업보고서 본문(IRDS 외 다른 공시) 같이 가져올지 검토 (스코프 ↑)
 
+## F. 인증 — 향후 작업 *(2026-05-04 보류 사항)*
+
+현재 구현 (commit `c99e369` + 이메일 게이트 전환): NextAuth v5 + Prisma
+Adapter + JWT 세션. **임시로 이메일만 입력하는 게이트** 동작 중 (회사
+도메인 `mnaikorea.com` 검증, 비밀번호 없음).
+
+원래 계획은 **ERP와 동일한 Google OAuth 클라이언트 재사용**이었지만,
+사용자가 회사 Google Cloud Console 접근 권한이 없어서 보류됨.
+
+- [ ] **Google OAuth로 전환**
+  - 사전 조건: 회사 Cloud Console 관리자에게 다음 둘 중 하나 요청
+    - (a) ERP 의 OAuth 클라이언트에 redirect URI 두 개 추가 + ERP 의
+      `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` 공유
+      - `http://localhost:3030/api/auth/callback/google`
+      - `https://finance-analysis-nextjs-wookis-projects-37b4f55c.vercel.app/api/auth/callback/google`
+    - (b) finance 전용 새 OAuth 클라이언트 생성 (위 두 redirect URI 등록)
+  - 받은 `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` 을 로컬 `.env.local` +
+    Vercel env 에 등록 → 자동으로 Google 버튼 노출 (코드는 이미 conditional
+    로 되어 있음).
+  - 이메일 임시 게이트는 그대로 두거나(보조 경로) 제거할지 결정.
+  - `src/auth.ts` 의 `signIn` 콜백 Google 분기에 이미 도메인/Workspace `hd`
+    검증 로직 들어가 있음.
+
+- [ ] **이메일 게이트의 보안 한계 인지**
+  - 비밀번호 없음 → 회사 도메인 이메일만 알면 누구나 진입 가능. 임시 사용
+    한정.
+  - 운영에 노출하기 전에 위 OAuth 전환을 완료할 것.
+
 ## E. AI 분석 파이프라인 개선 *(2026-05-04 완료, `next_job.md` 기반)*
 
 원래 `next_job.md`에 사용자가 적어두신 두 가지 개선 요청 — OCR 안 된 PDF 분석 실패 + AI JSON 출력 깨짐 — 을 두 단계로 처리.
