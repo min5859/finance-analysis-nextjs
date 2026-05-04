@@ -77,8 +77,8 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
             result: data as object,
           },
         });
-      } catch {
-        // DB 저장 실패해도 결과는 반환
+      } catch (err) {
+        console.error('[API:valuation] DB save failed (best-effort, response still returned)', err);
       }
     }
 
