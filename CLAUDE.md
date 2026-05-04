@@ -4,7 +4,6 @@
 
 - Always create a commit after making changes.
 - Keep each commit as a single logical unit for easy review.
-- Write commit messages in English.
 
 ## Tech Stack
 
