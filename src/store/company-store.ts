@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { CompanyFinancialData, CompanyListItem } from '@/types/company';
 import type { ValuationResult } from '@/types/valuation';
-
-type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'deepseek';
+import type { AIProvider } from '@/lib/ai-client';
 
 interface CompanyStore {
   companyData: CompanyFinancialData | null;

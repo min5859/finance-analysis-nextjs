@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useCompanyStore } from '@/store/company-store';
 import { useEffect, useState } from 'react';
 import { navOnlyItems, reportSlides } from '@/lib/slide-config';
+import type { AIProvider } from '@/lib/ai-client';
 
 const slideLinks = [
   ...navOnlyItems,
@@ -87,7 +88,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <label className="text-xs text-gray-500 block mb-1">AI Provider</label>
         <select
           value={aiProvider}
-          onChange={(e) => setAiProvider(e.target.value as 'anthropic' | 'openai' | 'gemini' | 'deepseek')}
+          onChange={(e) => setAiProvider(e.target.value as AIProvider)}
           className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="anthropic">Anthropic (Claude)</option>

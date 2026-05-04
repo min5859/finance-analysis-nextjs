@@ -18,20 +18,20 @@ src/
 ├── app/                    # Next.js App Router
 │   ├── (dashboard)/        # Dashboard route group (13 pages)
 │   │   └── layout.tsx      # Sidebar navigation layout
-│   ├── api/                # API routes (companies, config, dart, extract, pdf, upload, valuation)
+│   ├── api/                # API routes (companies, config, dart, extract, valuation)
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Landing page
 ├── components/
 │   ├── charts/             # Chart components (BarChart, LineChart, ChartCard, chartConfig)
-│   ├── layout/             # Layout components (Sidebar, etc.)
-│   ├── slides/             # Slide-style presentation components
-│   └── ui/                 # Shared UI (MetricCard, SlideHeader, EmptyState, ParamGroup, etc.)
+│   ├── layout/             # Layout components (Sidebar, Header, LayoutShell)
+│   ├── pdf/                # PDF report components
+│   └── ui/                 # Shared UI (MetricCard, SlideHeader, EmptyState, InsightCard, etc.)
 ├── features/
 │   ├── dart/               # DART API feature (constants, components)
 │   ├── financial-analysis/ # Financial analysis (evaluators, constants)
 │   └── valuation/          # Manual valuation (types, calculators, components)
 ├── hooks/                  # Custom hooks (useFinancialData, useDartData)
-├── lib/                    # Utilities (format, data-loader, ai-client, parse-ai-response)
+├── lib/                    # Utilities (format, data-loader, ai-client, prisma, pdf-generator)
 ├── store/                  # Zustand stores (company-store)
 └── types/                  # TypeScript type definitions (company, dart, valuation)
 ```
@@ -42,7 +42,7 @@ src/
 - Colors: Use `COLOR_PALETTE` from `@/components/charts/chartConfig` — no hardcoded hex values
 - Pages: Dashboard pages use `useFinancialData()` hook and `<EmptyState />` for null state
 - Types: No `any` types, no `eslint-disable` comments
-- API routes: Use `chatCompletion()` from `@/lib/ai-client` for AI calls (supports Anthropic & DeepSeek)
+- API routes: Use `chatCompletionJson()` from `@/lib/ai-client` for AI calls — provider-native structured JSON output (Anthropic / OpenAI / Gemini / DeepSeek)
 - Feature modules: Domain logic goes in `src/features/{domain}/`, not in page files
 
 ## Commands

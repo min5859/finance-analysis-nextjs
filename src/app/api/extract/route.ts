@@ -16,7 +16,6 @@ const PROVIDERS = ['anthropic', 'openai', 'gemini', 'deepseek'] as const;
 
 const jsonBodySchema = z.object({
   text: z.string().min(1, '텍스트가 비어있습니다.'),
-  type: z.enum(['pdf_text', 'dart_data', 'image_base64']).optional(),
   provider: z.enum(PROVIDERS).optional(),
 });
 

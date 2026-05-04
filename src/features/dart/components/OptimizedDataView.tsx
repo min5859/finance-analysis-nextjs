@@ -41,7 +41,7 @@ export default function OptimizedDataView({ items, corpName, year }: OptimizedDa
       const extractRes = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: jsonStr, type: 'dart_data', provider: aiProvider }),
+        body: JSON.stringify({ text: jsonStr, provider: aiProvider }),
       });
       if (!extractRes.ok) {
         const err = await extractRes.json().catch(() => ({}));
