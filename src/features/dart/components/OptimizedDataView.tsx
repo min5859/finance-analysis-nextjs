@@ -55,7 +55,7 @@ export default function OptimizedDataView({ items, corpName, year }: OptimizedDa
       const saveRes = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, provider: aiProvider }),
       });
       if (!saveRes.ok) {
         const err = await saveRes.json().catch(() => ({}));

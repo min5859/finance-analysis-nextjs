@@ -73,7 +73,7 @@ export default function HomePage() {
       const saveRes = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, provider: aiProvider }),
       });
       if (!saveRes.ok) throw new Error('데이터 저장 실패');
 
@@ -82,7 +82,7 @@ export default function HomePage() {
 
       setState((s) => ({ ...s, step: 'done', message: '완료!', result: data }));
     },
-    [setCompanyData, loadCompanyList],
+    [setCompanyData, loadCompanyList, aiProvider],
   );
 
   const processPdfFile = useCallback(
@@ -143,7 +143,7 @@ export default function HomePage() {
       const saveRes = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(companyResult),
+        body: JSON.stringify({ ...companyResult, provider: aiProvider }),
       });
       if (!saveRes.ok) throw new Error('데이터 저장 실패');
 

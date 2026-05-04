@@ -20,6 +20,7 @@ const companySaveSchema = z.object({
   radar_data: z.record(z.string(), z.unknown()).optional(),
   insights: z.record(z.string(), z.unknown()).optional(),
   conclusion: z.record(z.string(), z.unknown()).optional(),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'deepseek']).optional(),
 });
 
 export async function GET() {
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
       data: {
         companyId: company.id,
         reportYear: data.report_year || '',
-        provider: 'anthropic',
+        provider: data.provider ?? 'anthropic',
         financialData: data as unknown as Prisma.InputJsonValue,
       },
     });
