@@ -44,11 +44,16 @@ export const useCompanyStore = create<CompanyStore>()(persist((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await fetch(`/api/companies/${encodeURIComponent(filename)}`);
-      if (!res.ok) throw new Error('기업 데이터를 불러올 수 없습니다.');
+      if (!res.ok) {
+        const detail = res.status === 404 ? '해당 기업의 분석 데이터가 없습니다.' : `기업 데이터 로드 실패 (${res.status})`;
+        throw new Error(detail);
+      }
       const data = await res.json();
       set({ companyData: data, selectedCompany: filename, isLoading: false });
     } catch (err) {
-      set({ error: (err as Error).message, isLoading: false });
+      const msg = (err as Error).message;
+      set({ error: msg, isLoading: false });
+      if (typeof window !== 'undefined') window.alert(msg);
     }
   },
 

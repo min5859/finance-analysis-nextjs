@@ -35,6 +35,10 @@ const companySaveSchema = z.object({
 export async function GET() {
   try {
     const companies = await prisma.company.findMany({
+      where: {
+        // 분석 결과가 하나라도 있는 회사만 노출 — analysis 없는 orphan row가 드롭다운에 뜨면 선택 시 404
+        analyses: { some: {} },
+      },
       select: {
         id: true,
         name: true,
