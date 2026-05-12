@@ -84,9 +84,27 @@ model Company {
 
   financialStatements FinancialStatement[]
   analyses            Analysis[]
+  shareLinks          ShareLink[]
 
   @@unique([name, corpCode], name: "name_corpCode")
   @@map("companies")
+}
+
+// 회사 분석 결과를 비로그인 사용자도 read-only 로 볼 수 있게 하는 공유 토큰.
+// token 만 알면 /share/<token> 으로 접근 가능. revokedAt 이 set 되면 비활성.
+model ShareLink {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  companyId String    @map("company_id")
+  createdBy String?   @map("created_by")
+  expiresAt DateTime? @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("share_links")
 }
 
 enum StatementSource {

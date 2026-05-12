@@ -3,11 +3,23 @@ import { NextResponse } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/api/auth'];
 
+// /share/<token> 공개 페이지와 GET /api/share/<token> 공개 조회만 허용.
+// POST /api/share 와 DELETE /api/share/<token> 은 인증 유지.
+function isPublicShareRequest(method: string, pathname: string): boolean {
+  if (pathname.startsWith('/share/')) return true;
+  if (method === 'GET' && /^\/api\/share\/[^/]+$/.test(pathname)) return true;
+  return false;
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   // 공개 경로는 그대로 통과
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return NextResponse.next();
+  }
+
+  if (isPublicShareRequest(req.method, pathname)) {
     return NextResponse.next();
   }
 

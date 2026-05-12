@@ -9,10 +9,12 @@ import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 
 export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const companyData = useCompanyStore((s) => s.companyData);
+  const selectedCompany = useCompanyStore((s) => s.selectedCompany);
   const companyName = companyData?.company_name || '기업 재무';
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFullReport, setIsFullReport] = useState(false);
   const [progress, setProgress] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
   const fullReportRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
@@ -30,6 +32,37 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
     if (!companyData) return;
     downloadCompanyCsv(companyData);
   }, [companyData]);
+
+  const handleCreateShareLink = useCallback(async () => {
+    if (!selectedCompany) {
+      window.alert('사이드바에서 회사를 선택한 후에 공유 링크를 생성할 수 있습니다.');
+      return;
+    }
+    setIsSharing(true);
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: selectedCompany }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? `공유 링크 생성 실패 (HTTP ${res.status})`);
+      }
+      const data = (await res.json()) as { token: string };
+      const url = `${window.location.origin}/share/${data.token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        window.alert(`공유 링크가 클립보드에 복사되었습니다.\n\n${url}\n\n토큰을 가진 사람은 누구나 read-only 로 열람 가능합니다.`);
+      } catch {
+        window.prompt('공유 링크 (복사하세요):', url);
+      }
+    } catch (err) {
+      window.alert((err as Error).message);
+    } finally {
+      setIsSharing(false);
+    }
+  }, [selectedCompany]);
 
   const handleFullReport = useCallback(async () => {
     setIsFullReport(true);
@@ -103,6 +136,14 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
               title="원본 재무 수치를 CSV(엑셀 호환)로 내보냅니다."
             >
               CSV
+            </button>
+            <button
+              onClick={handleCreateShareLink}
+              disabled={isGenerating || isSharing || !selectedCompany}
+              className="text-sm text-white border border-white/50 px-4 py-1.5 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+              title={selectedCompany ? '비로그인 사용자가 읽기 전용으로 볼 수 있는 링크를 만듭니다.' : '회사를 사이드바에서 선택한 후 공유 가능'}
+            >
+              {isSharing ? '생성 중...' : '공유'}
             </button>
             <button
               onClick={handleDownload}

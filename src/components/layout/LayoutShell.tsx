@@ -12,8 +12,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
-  // 인증 화면에는 사이드바/헤더를 띄우지 않음
-  if (pathname === '/login') {
+  // 인증 화면 / 공유 read-only 페이지는 사이드바/헤더 미렌더
+  if (pathname === '/login' || pathname.startsWith('/share/')) {
     return <SessionProvider>{children}</SessionProvider>;
   }
 
