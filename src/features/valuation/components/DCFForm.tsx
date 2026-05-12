@@ -11,12 +11,19 @@ import RangeInput from '@/components/ui/RangeInput';
 import InfoBox from '@/components/ui/InfoBox';
 import SubmitButton from '@/components/ui/SubmitButton';
 
+export interface DCFContext {
+  params: DCFParams;
+  wacc: number;
+  adjustedFcf: number;
+  latestDebt: number;
+}
+
 interface DCFFormProps {
   perfData: PerformanceData;
   bsData: BalanceSheetData;
   cfData: CashFlowData;
   growthData: GrowthRatesData;
-  onSubmit: (r: ValuationResult) => void;
+  onSubmit: (r: ValuationResult, ctx: DCFContext) => void;
 }
 
 export default function DCFForm({ bsData, cfData, growthData, onSubmit }: DCFFormProps) {
@@ -57,7 +64,10 @@ export default function DCFForm({ bsData, cfData, growthData, onSubmit }: DCFFor
   const adjustedFcf = p.baseFcf * (1 + p.fcfAdjustment / 100);
 
   const calculate = () => {
-    onSubmit(calculateDCF(p, wacc, adjustedFcf, latestDebt));
+    onSubmit(
+      calculateDCF(p, wacc, adjustedFcf, latestDebt),
+      { params: p, wacc, adjustedFcf, latestDebt },
+    );
   };
 
   return (

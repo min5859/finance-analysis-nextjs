@@ -5,11 +5,12 @@ import SlideHeader from '@/components/ui/SlideHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { useFinancialData } from '@/hooks/useFinancialData';
 import type { Method, ValuationResult } from '@/features/valuation/types';
-import DCFForm from '@/features/valuation/components/DCFForm';
+import DCFForm, { type DCFContext } from '@/features/valuation/components/DCFForm';
 import MultiplesForm from '@/features/valuation/components/MultiplesForm';
 import AssetForm from '@/features/valuation/components/AssetForm';
 import CombinedForm from '@/features/valuation/components/CombinedForm';
 import ResultsView from '@/features/valuation/components/ResultsView';
+import SensitivityPanel from '@/features/valuation/components/SensitivityPanel';
 
 const METHOD_OPTIONS: { key: Method; label: string }[] = [
   { key: 'dcf', label: 'DCF (Discounted Cash Flow)' },
@@ -22,6 +23,7 @@ export default function ValuationManualPage() {
   const { dl } = useFinancialData();
   const [method, setMethod] = useState<Method>('dcf');
   const [result, setResult] = useState<ValuationResult | null>(null);
+  const [dcfContext, setDcfContext] = useState<DCFContext | null>(null);
 
   if (!dl) return <EmptyState />;
 
@@ -39,7 +41,7 @@ export default function ValuationManualPage() {
         {METHOD_OPTIONS.map((m) => (
           <button
             key={m.key}
-            onClick={() => { setMethod(m.key); setResult(null); }}
+            onClick={() => { setMethod(m.key); setResult(null); setDcfContext(null); }}
             className={`py-2 px-3 text-sm font-medium rounded-lg border transition-colors ${
               method === m.key
                 ? 'bg-indigo-600 text-white border-indigo-600'
@@ -57,13 +59,34 @@ export default function ValuationManualPage() {
 
       {!result ? (
         <>
-          {method === 'dcf' && <DCFForm perfData={perfData} bsData={bsData} cfData={cfData} growthData={growthData} onSubmit={setResult} />}
+          {method === 'dcf' && (
+            <DCFForm
+              perfData={perfData}
+              bsData={bsData}
+              cfData={cfData}
+              growthData={growthData}
+              onSubmit={(r, ctx) => {
+                setResult(r);
+                setDcfContext(ctx);
+              }}
+            />
+          )}
           {method === 'multiples' && <MultiplesForm perfData={perfData} bsData={bsData} cfData={cfData} onSubmit={setResult} />}
           {method === 'asset' && <AssetForm bsData={bsData} onSubmit={setResult} />}
           {method === 'combined' && <CombinedForm perfData={perfData} bsData={bsData} cfData={cfData} onSubmit={setResult} />}
         </>
       ) : (
-        <ResultsView result={result} onReset={() => setResult(null)} />
+        <div className="space-y-5">
+          <ResultsView result={result} onReset={() => { setResult(null); setDcfContext(null); }} />
+          {method === 'dcf' && dcfContext && (
+            <SensitivityPanel
+              params={dcfContext.params}
+              baseWacc={dcfContext.wacc}
+              baseAdjustedFcf={dcfContext.adjustedFcf}
+              latestDebt={dcfContext.latestDebt}
+            />
+          )}
+        </div>
       )}
     </div>
   );
