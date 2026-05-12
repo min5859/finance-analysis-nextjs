@@ -4,10 +4,12 @@ import EmptyState from '@/components/ui/EmptyState';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
 import { FScoreCard, DistressCard } from '@/components/ui/HealthScoreCard';
+import RiskFlagsCard from '@/components/ui/RiskFlagsCard';
 import {
   calculatePiotroskiFScore,
   detectDistressSignals,
 } from '@/features/financial-analysis/health-scores';
+import { detectRiskFlags } from '@/features/financial-analysis/risk-flags';
 import { latest, previous } from '@/lib/format';
 
 export default function SummaryPage() {
@@ -21,6 +23,7 @@ export default function SummaryPage() {
   const all = dl.getAllData();
   const fScore = calculatePiotroskiFScore(all);
   const distress = detectDistressSignals(all);
+  const riskFlags = detectRiskFlags(all);
 
   return (
     <div>
@@ -36,6 +39,9 @@ export default function SummaryPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <FScoreCard result={fScore} />
         <DistressCard result={distress} />
+      </div>
+      <div className="mb-4">
+        <RiskFlagsCard flags={riskFlags} />
       </div>
       {gr.year.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
