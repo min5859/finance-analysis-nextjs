@@ -3,6 +3,11 @@ import { useFinancialData } from '@/hooks/useFinancialData';
 import EmptyState from '@/components/ui/EmptyState';
 import SlideHeader from '@/components/ui/SlideHeader';
 import MetricCard from '@/components/ui/MetricCard';
+import { FScoreCard, DistressCard } from '@/components/ui/HealthScoreCard';
+import {
+  calculatePiotroskiFScore,
+  detectDistressSignals,
+} from '@/features/financial-analysis/health-scores';
 import { latest, previous } from '@/lib/format';
 
 export default function SummaryPage() {
@@ -13,6 +18,9 @@ export default function SummaryPage() {
   const stab = dl.getStabilityData();
   const cf = dl.getCashFlowData();
   const gr = dl.getGrowthRates();
+  const all = dl.getAllData();
+  const fScore = calculatePiotroskiFScore(all);
+  const distress = detectDistressSignals(all);
 
   return (
     <div>
@@ -24,6 +32,10 @@ export default function SummaryPage() {
         <MetricCard title="부채비율" value={latest(stab.부채비율)} prevValue={previous(stab.부채비율)} unit="%" invertDelta />
         <MetricCard title="유동비율" value={latest(stab.유동비율)} prevValue={previous(stab.유동비율)} unit="%" />
         <MetricCard title="영업활동 현금흐름" value={latest(cf.영업활동)} prevValue={previous(cf.영업활동)} unit="억원" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <FScoreCard result={fScore} />
+        <DistressCard result={distress} />
       </div>
       {gr.year.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
