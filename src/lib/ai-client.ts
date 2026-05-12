@@ -43,6 +43,13 @@ interface ChatCompletionJsonParams {
   attachments?: PdfAttachment[];
 }
 
+export interface UsageInfo {
+  provider: AIProvider;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface PdfAttachment {
   kind: 'pdf';
   /** base64-encoded PDF bytes (no data URL prefix). */
@@ -119,13 +126,13 @@ export async function chatCompletionJson<T = unknown>({
   jsonSchema,
   toolName = 'extract_data',
   attachments,
-}: ChatCompletionJsonParams): Promise<{ data: T | null; error: NextResponse | null }> {
+}: ChatCompletionJsonParams): Promise<{ data: T | null; usage: UsageInfo | null; error: NextResponse | null }> {
   const resolvedModel = model || DEFAULT_MODELS[provider];
 
   if (provider === 'anthropic') {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) {
-      return { data: null, error: NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured in .env.local' }, { status: 401 }) };
+      return { data: null, usage: null, error: NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured in .env.local' }, { status: 401 }) };
     }
     const client = new Anthropic({ apiKey: key });
     const inputSchema = (jsonSchema ?? { type: 'object', additionalProperties: true }) as Anthropic.Tool.InputSchema;
@@ -154,19 +161,25 @@ export async function chatCompletionJson<T = unknown>({
       temperature,
       max_tokens: maxTokens,
     });
+    const usage: UsageInfo = {
+      provider,
+      model: resolvedModel,
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+    };
     const toolUse = response.content.find((c): c is Anthropic.ToolUseBlock => c.type === 'tool_use');
     if (!toolUse) {
       console.error('[ai-client] Anthropic did not return tool_use block');
-      return { data: null, error: NextResponse.json({ error: 'AI did not return structured output' }, { status: 500 }) };
+      return { data: null, usage, error: NextResponse.json({ error: 'AI did not return structured output' }, { status: 500 }) };
     }
-    return { data: toolUse.input as T, error: null };
+    return { data: toolUse.input as T, usage, error: null };
   }
 
   // OpenAI-compatible providers
   const config = OPENAI_COMPATIBLE_CONFIG[provider];
   const key = process.env[config.envVar];
   if (!key) {
-    return { data: null, error: NextResponse.json({ error: `${config.envVar} not configured in .env.local` }, { status: 401 }) };
+    return { data: null, usage: null, error: NextResponse.json({ error: `${config.envVar} not configured in .env.local` }, { status: 401 }) };
   }
   const client = new OpenAI({
     apiKey: key,
@@ -188,11 +201,17 @@ export async function chatCompletionJson<T = unknown>({
     temperature,
     max_tokens: maxTokens,
   });
+  const usage: UsageInfo = {
+    provider,
+    model: resolvedModel,
+    inputTokens: response.usage?.prompt_tokens ?? 0,
+    outputTokens: response.usage?.completion_tokens ?? 0,
+  };
   const content = response.choices[0].message.content ?? '';
   try {
-    return { data: JSON.parse(content) as T, error: null };
+    return { data: JSON.parse(content) as T, usage, error: null };
   } catch (err) {
     console.error(`[ai-client] JSON parse failed for ${provider} despite response_format:`, err, '\nRaw (first 500 chars):', content.slice(0, 500));
-    return { data: null, error: NextResponse.json({ error: 'AI returned malformed JSON' }, { status: 500 }) };
+    return { data: null, usage, error: NextResponse.json({ error: 'AI returned malformed JSON' }, { status: 500 }) };
   }
 }

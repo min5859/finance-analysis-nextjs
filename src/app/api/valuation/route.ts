@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { chatCompletionJson, type AIProvider } from '@/lib/ai-client';
+import { auth } from '@/auth';
+import { getDailyUsage, recordUsage } from '@/lib/usage';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-error';
 
@@ -20,6 +22,19 @@ const valuationSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    const userEmail = session?.user?.email ?? null;
+    const dailyUsage = await getDailyUsage(userEmail);
+    if (dailyUsage.overLimit) {
+      return NextResponse.json(
+        {
+          error: `일일 사용 한도 초과 ($${dailyUsage.limitUsd.toFixed(2)}).`,
+          usage: dailyUsage,
+        },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const parsed = valuationSchema.safeParse(body);
     if (!parsed.success) {
@@ -84,7 +99,7 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
       required: ['company', 'ebitda_valuation', 'dcf_valuation', 'summary'],
     };
 
-    const { data, error } = await chatCompletionJson<object>({
+    const { data, usage: aiUsage, error } = await chatCompletionJson<object>({
       provider: provider as AIProvider,
       system: '당신은 기업 가치 평가와 M&A 분석을 전문으로 하는 금융 애널리스트입니다.',
       userMessage,
@@ -93,6 +108,16 @@ ${industry_info ? `산업 관련 정보: ${JSON.stringify(industry_info)}` : ''}
       jsonSchema: valuationSchemaJson,
       toolName: 'submit_valuation',
     });
+    if (aiUsage) {
+      await recordUsage({
+        userEmail,
+        provider: aiUsage.provider,
+        model: aiUsage.model,
+        inputTokens: aiUsage.inputTokens,
+        outputTokens: aiUsage.outputTokens,
+        source: 'valuation',
+      });
+    }
     if (error) return error;
     if (!data) {
       return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });

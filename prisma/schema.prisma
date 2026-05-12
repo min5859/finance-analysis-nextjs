@@ -143,3 +143,21 @@ model Valuation {
 
   @@map("valuations")
 }
+
+// AI 호출 1회당 1 row. 어떤 사용자가 어떤 모델로 얼마를 태웠는지 추적.
+// 일일 한도 가드 (lib/usage.ts) 가 (userEmail, createdAt) 으로 합산.
+model UsageEvent {
+  id           String   @id @default(uuid())
+  userEmail    String?  @map("user_email")
+  provider     String
+  model        String?
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  costUsd      Float    @default(0) @map("cost_usd")
+  source       String   // 'extract-server' | 'extract-client-anthropic' | 'valuation'
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userEmail, createdAt])
+  @@index([createdAt])
+  @@map("usage_events")
+}

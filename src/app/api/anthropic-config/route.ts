@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { auth } from '@/auth';
+import { getDailyUsage } from '@/lib/usage';
 
 // ⚠️ TEMPORARY — 보안 부채 보유 코드 ⚠️
 //
@@ -25,6 +26,18 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // 일일 한도 가드 — 키 발급 전에 차단해야 client-direct 호출이 막힘.
+  const usage = await getDailyUsage(session.user.email ?? null);
+  if (usage.overLimit) {
+    return NextResponse.json(
+      {
+        error: `일일 사용 한도 초과 ($${usage.limitUsd.toFixed(2)}).`,
+        usage,
+      },
+      { status: 429 },
+    );
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

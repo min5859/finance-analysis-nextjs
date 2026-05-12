@@ -8,6 +8,8 @@ import {
   PROVIDERS_WITH_PDF_INPUT,
   type AIProvider,
 } from '@/lib/ai-client';
+import { auth } from '@/auth';
+import { getDailyUsage, recordUsage } from '@/lib/usage';
 import { handleApiError } from '@/lib/api-error';
 
 const MAX_PDF_SIZE = 32 * 1024 * 1024; // Anthropic document upload upper bound
@@ -42,6 +44,19 @@ async function pdfToText(buffer: Buffer): Promise<string> {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    const userEmail = session?.user?.email ?? null;
+    const usage = await getDailyUsage(userEmail);
+    if (usage.overLimit) {
+      return NextResponse.json(
+        {
+          error: `일일 사용 한도 초과 ($${usage.limitUsd.toFixed(2)}). 내일 자정(UTC) 이후 다시 시도하거나 관리자에게 한도 상향을 요청하세요.`,
+          usage,
+        },
+        { status: 429 },
+      );
+    }
+
     const contentType = request.headers.get('content-type') || '';
 
     // Multipart path: PDF binary uploaded directly. Anthropic gets the PDF as-is;
@@ -69,7 +84,7 @@ export async function POST(request: Request) {
       const system = `${prompt}\n\nJSON 템플릿:\n${template}`;
 
       if (PROVIDERS_WITH_PDF_INPUT.includes(provider)) {
-        const { data, error } = await chatCompletionJson<object>({
+        const { data, usage: aiUsage, error } = await chatCompletionJson<object>({
           provider,
           system,
           userMessage: '첨부된 PDF 사업보고서/재무제표를 분석하여 지정된 JSON 형식으로 변환해주세요. 스캔된 페이지가 있다면 OCR로 읽어주세요.',
@@ -78,6 +93,16 @@ export async function POST(request: Request) {
           attachments: [{ kind: 'pdf', base64: buffer.toString('base64') }],
           toolName: 'extract_finance_data',
         });
+        if (aiUsage) {
+          await recordUsage({
+            userEmail,
+            provider: aiUsage.provider,
+            model: aiUsage.model,
+            inputTokens: aiUsage.inputTokens,
+            outputTokens: aiUsage.outputTokens,
+            source: 'extract-server',
+          });
+        }
         if (error) return error;
         if (!data) return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
         return NextResponse.json({ success: true, data });
@@ -100,7 +125,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      const { data, error } = await chatCompletionJson<object>({
+      const { data, usage: aiUsage, error } = await chatCompletionJson<object>({
         provider,
         system,
         userMessage: `다음 PDF 텍스트를 분석하여 지정된 JSON 형식으로 변환해주세요. 문서 내용: ${text.substring(0, MAX_INPUT_CHARS)}`,
@@ -108,6 +133,16 @@ export async function POST(request: Request) {
         maxTokens: 8192,
         toolName: 'extract_finance_data',
       });
+      if (aiUsage) {
+        await recordUsage({
+          userEmail,
+          provider: aiUsage.provider,
+          model: aiUsage.model,
+          inputTokens: aiUsage.inputTokens,
+          outputTokens: aiUsage.outputTokens,
+          source: 'extract-server',
+        });
+      }
       if (error) return error;
       if (!data) return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
       return NextResponse.json({ success: true, data });
@@ -122,7 +157,7 @@ export async function POST(request: Request) {
     const { text, provider = 'anthropic' } = parsed.data;
     const { prompt, template } = loadPromptAndTemplate();
 
-    const { data, error } = await chatCompletionJson<object>({
+    const { data, usage: aiUsage, error } = await chatCompletionJson<object>({
       provider: provider as AIProvider,
       system: `${prompt}\n\nJSON 템플릿:\n${template}`,
       userMessage: `다음 재무제표 내용을 분석하여 지정된 JSON 형식으로 변환해주세요. 문서 내용: ${text.substring(0, MAX_INPUT_CHARS)}`,
@@ -130,6 +165,16 @@ export async function POST(request: Request) {
       maxTokens: 8192,
       toolName: 'extract_finance_data',
     });
+    if (aiUsage) {
+      await recordUsage({
+        userEmail,
+        provider: aiUsage.provider,
+        model: aiUsage.model,
+        inputTokens: aiUsage.inputTokens,
+        outputTokens: aiUsage.outputTokens,
+        source: 'extract-server',
+      });
+    }
     if (error) return error;
     if (!data) return NextResponse.json({ error: 'AI 응답이 비어있습니다.' }, { status: 500 });
     return NextResponse.json({ success: true, data });

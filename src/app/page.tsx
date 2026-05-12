@@ -8,6 +8,7 @@ import {
   fetchAnthropicConfig,
   fileToBase64,
   extractFinanceFromPdfDirect,
+  reportClientDirectUsage,
 } from '@/lib/anthropic-browser';
 
 type Step = 'idle' | 'uploading' | 'extracting' | 'saving' | 'done' | 'error';
@@ -99,12 +100,15 @@ export default function HomePage() {
           step: 'extracting',
           message: 'AI 분석 중... (1~5분 소요, 페이지 수에 따라 다름)',
         }));
-        const data = (await extractFinanceFromPdfDirect({
+        const direct = await extractFinanceFromPdfDirect({
           pdfBase64,
           apiKey: config.apiKey,
           model: config.model,
           system: config.system,
-        })) as CompanyFinancialData;
+        });
+        const data = direct.data as CompanyFinancialData;
+        // 서버 우회 경로 — 사용량을 별도로 신고해야 일일 한도 가드가 작동.
+        void reportClientDirectUsage(direct.usage);
 
         setState((s) => ({ ...s, step: 'saving', message: '데이터 저장 중...' }));
         const saveRes = await fetch('/api/companies', {
