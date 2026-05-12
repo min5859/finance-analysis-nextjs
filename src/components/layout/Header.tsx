@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useCompanyStore } from '@/store/company-store';
 import { downloadPdf, downloadFullReportPdf } from '@/lib/pdf-generator';
+import { downloadCompanyCsv } from '@/lib/csv-export';
 import FullReportContent from '@/components/pdf/FullReportContent';
 import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 
@@ -24,6 +25,11 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
       setIsGenerating(false);
     }
   };
+
+  const handleDownloadCsv = useCallback(() => {
+    if (!companyData) return;
+    downloadCompanyCsv(companyData);
+  }, [companyData]);
 
   const handleFullReport = useCallback(async () => {
     setIsFullReport(true);
@@ -90,6 +96,14 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
             {progress && (
               <span className="text-xs text-white/70">{progress}</span>
             )}
+            <button
+              onClick={handleDownloadCsv}
+              disabled={isGenerating}
+              className="text-sm text-white border border-white/50 px-4 py-1.5 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+              title="원본 재무 수치를 CSV(엑셀 호환)로 내보냅니다."
+            >
+              CSV
+            </button>
             <button
               onClick={handleDownload}
               disabled={isGenerating}
