@@ -330,18 +330,68 @@ function addSummarySlide(pptx: PptxGenJS, data: CompanyFinancialData) {
     `${risks.length}건`, risks.length === 0 ? PPTX_COLORS.success : PPTX_COLORS.danger);
 }
 
+type ChartKind = 'line' | 'bar' | 'radar';
+
+interface ChartSpec {
+  type: ChartKind;
+  labels: string[];
+  series: Record<string, number[]>;
+  /** stacked bar 등 일부 옵션 노출 */
+  barGrouping?: 'standard' | 'stacked';
+}
+
+function chartTypeOf(pptx: PptxGenJS, kind: ChartKind) {
+  switch (kind) {
+    case 'line':
+      return pptx.ChartType.line;
+    case 'bar':
+      return pptx.ChartType.bar;
+    case 'radar':
+      return pptx.ChartType.radar;
+  }
+}
+
+function addChart(pptx: PptxGenJS, slide: Slide, x: number, y: number, w: number, h: number, spec: ChartSpec) {
+  const data = Object.entries(spec.series).map(([name, values]) => ({
+    name,
+    labels: spec.labels,
+    values,
+  }));
+  slide.addChart(chartTypeOf(pptx, spec.type), data, {
+    x,
+    y,
+    w,
+    h,
+    chartColors: PPTX_SERIES_COLORS,
+    showLegend: true,
+    legendPos: 'b',
+    legendFontFace: FONT,
+    legendFontSize: 10,
+    catAxisLabelFontFace: FONT,
+    catAxisLabelFontSize: 10,
+    valAxisLabelFontFace: FONT,
+    valAxisLabelFontSize: 10,
+    showValue: false,
+    ...(spec.type === 'bar' && spec.barGrouping ? { barGrouping: spec.barGrouping } : {}),
+  });
+}
+
 function addStatementSlide(
   pptx: PptxGenJS,
   title: string,
   header: string[],
   rows: (string | number)[][],
   insight?: string,
+  chart?: ChartSpec,
 ) {
   const slide = pptx.addSlide({ masterName: 'BASE' });
   slideTitle(slide, title);
 
-  // 좌측 표 (5 in 폭), 우측은 Phase D 에서 차트가 들어올 자리.
+  // 좌측 표 (5 in 폭), 우측 차트 (7 in 폭).
   dataTable(slide, MARGIN, 1.3, 5.0, 4.0, header, rows);
+  if (chart) {
+    addChart(pptx, slide, MARGIN + 5.3, 1.3, 7.0, 4.0, chart);
+  }
 
   if (insight) {
     slide.addText(insight, {
@@ -411,86 +461,118 @@ function addAllStatementSlides(pptx: PptxGenJS, data: CompanyFinancialData) {
   if (data.performance_data?.year?.length) {
     const pd = data.performance_data;
     const yr = pd.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      매출액: pd.매출액,
-      영업이익: pd.영업이익,
-      순이익: pd.순이익,
-    }, 0);
+    const amounts = { 매출액: pd.매출액, 영업이익: pd.영업이익, 순이익: pd.순이익 };
+    const { header, rows } = buildSeriesRows(yr, amounts, 0);
     const insight = ins.income_statement?.content1 ?? '';
-    addStatementSlide(pptx, '손익계산서 (억원)', header, rows, insight);
+    addStatementSlide(pptx, '손익계산서 (억원)', header, rows, insight, {
+      type: 'line',
+      labels: yr,
+      series: amounts,
+    });
 
     if (pd.영업이익률?.length || pd.순이익률?.length) {
-      const ratio = buildSeriesRows(yr, {
-        영업이익률: pd.영업이익률,
-        순이익률: pd.순이익률,
-      }, 1);
-      addStatementSlide(pptx, '이익률 추이 (%)', ratio.header, ratio.rows);
+      const ratio = { 영업이익률: pd.영업이익률, 순이익률: pd.순이익률 };
+      const tbl = buildSeriesRows(yr, ratio, 1);
+      addStatementSlide(pptx, '이익률 추이 (%)', tbl.header, tbl.rows, undefined, {
+        type: 'line',
+        labels: yr,
+        series: ratio,
+      });
     }
   }
 
   if (data.balance_sheet_data?.year?.length) {
-    const yr = data.balance_sheet_data.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      총자산: data.balance_sheet_data.총자산,
-      총부채: data.balance_sheet_data.총부채,
-      자본총계: data.balance_sheet_data.자본총계,
-    }, 0);
-    addStatementSlide(pptx, '재무상태표 (억원)', header, rows, ins.balance_sheet?.content1);
+    const bs = data.balance_sheet_data;
+    const series = { 총자산: bs.총자산, 총부채: bs.총부채, 자본총계: bs.자본총계 };
+    const { header, rows } = buildSeriesRows(bs.year, series, 0);
+    addStatementSlide(pptx, '재무상태표 (억원)', header, rows, ins.balance_sheet?.content1, {
+      type: 'bar',
+      labels: bs.year,
+      series,
+    });
   }
 
   if (data.growth_rates?.year?.length) {
-    const yr = data.growth_rates.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      총자산성장률: data.growth_rates.총자산성장률,
-      매출액성장률: data.growth_rates.매출액성장률,
-      순이익성장률: data.growth_rates.순이익성장률,
-    }, 1);
-    addStatementSlide(pptx, '성장성 분석 (%)', header, rows, ins.growth_rates?.content1);
+    const gr = data.growth_rates;
+    const series = { 총자산성장률: gr.총자산성장률, 매출액성장률: gr.매출액성장률, 순이익성장률: gr.순이익성장률 };
+    const { header, rows } = buildSeriesRows(gr.year, series, 1);
+    addStatementSlide(pptx, '성장성 분석 (%)', header, rows, ins.growth_rates?.content1, {
+      type: 'line',
+      labels: gr.year,
+      series,
+    });
   }
 
   if (data.profitability_data?.year?.length) {
-    const yr = data.profitability_data.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      ROE: data.profitability_data.ROE,
-      ROA: data.profitability_data.ROA,
-      영업이익률: data.profitability_data.영업이익률,
-      순이익률: data.profitability_data.순이익률,
-    }, 1);
-    addStatementSlide(pptx, '수익성 분석 (%)', header, rows, ins.profitability?.content1);
+    const p = data.profitability_data;
+    const series = { ROE: p.ROE, ROA: p.ROA, 영업이익률: p.영업이익률, 순이익률: p.순이익률 };
+    const { header, rows } = buildSeriesRows(p.year, series, 1);
+    addStatementSlide(pptx, '수익성 분석 (%)', header, rows, ins.profitability?.content1, {
+      type: 'line',
+      labels: p.year,
+      series,
+    });
   }
 
   if (data.stability_data?.year?.length) {
-    const yr = data.stability_data.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      부채비율: data.stability_data.부채비율,
-      유동비율: data.stability_data.유동비율,
-      이자보상배율: data.stability_data.이자보상배율,
-    }, 1);
-    addStatementSlide(pptx, '안정성 분석', header, rows, ins.stability?.content1);
+    const s = data.stability_data;
+    const series = { 부채비율: s.부채비율, 유동비율: s.유동비율, 이자보상배율: s.이자보상배율 };
+    const { header, rows } = buildSeriesRows(s.year, series, 1);
+    addStatementSlide(pptx, '안정성 분석', header, rows, ins.stability?.content1, {
+      type: 'line',
+      labels: s.year,
+      series,
+    });
   }
 
   if (data.cash_flow_data?.year?.length) {
-    const yr = data.cash_flow_data.year;
     const cf = data.cash_flow_data;
-    const series: Record<string, number[]> = {
-      영업활동: cf.영업활동,
-      투자활동: cf.투자활동,
-      FCF: cf.FCF,
-    };
+    const series: Record<string, number[]> = { 영업활동: cf.영업활동, 투자활동: cf.투자활동, FCF: cf.FCF };
     if (cf.재무활동) series.재무활동 = cf.재무활동;
-    const { header, rows } = buildSeriesRows(yr, series, 0);
-    addStatementSlide(pptx, '현금흐름 (억원)', header, rows, ins.cash_flow?.content1);
+    const { header, rows } = buildSeriesRows(cf.year, series, 0);
+    addStatementSlide(pptx, '현금흐름 (억원)', header, rows, ins.cash_flow?.content1, {
+      type: 'bar',
+      labels: cf.year,
+      series,
+    });
   }
 
   if (data.working_capital_data?.year?.length) {
-    const yr = data.working_capital_data.year;
-    const { header, rows } = buildSeriesRows(yr, {
-      DSO: data.working_capital_data.DSO,
-      DIO: data.working_capital_data.DIO,
-      DPO: data.working_capital_data.DPO,
-      CCC: data.working_capital_data.CCC,
-    }, 1);
-    addStatementSlide(pptx, '운전자본 효율성 (일)', header, rows, ins.working_capital?.content1);
+    const wc = data.working_capital_data;
+    const series = { DSO: wc.DSO, DIO: wc.DIO, DPO: wc.DPO, CCC: wc.CCC };
+    const { header, rows } = buildSeriesRows(wc.year, series, 1);
+    addStatementSlide(pptx, '운전자본 효율성 (일)', header, rows, ins.working_capital?.content1, {
+      type: 'bar',
+      labels: wc.year,
+      series,
+    });
+  }
+
+  // 업계비교 — radar_data 가 있는 경우만
+  if (data.radar_data?.metric?.length) {
+    const slide = pptx.addSlide({ masterName: 'BASE' });
+    slideTitle(slide, '업계비교 (레이더)');
+    const metrics = data.radar_data.metric;
+    const otherKeys = Object.keys(data.radar_data).filter((k) => k !== 'metric');
+    const series: Record<string, number[]> = {};
+    for (const key of otherKeys) {
+      const arr = data.radar_data[key];
+      if (Array.isArray(arr) && arr.every((v) => typeof v === 'number')) {
+        series[key] = arr as number[];
+      }
+    }
+    if (Object.keys(series).length > 0) {
+      addChart(pptx, slide, MARGIN, 1.3, SLIDE_W - MARGIN * 2, 5.5, {
+        type: 'radar',
+        labels: metrics,
+        series,
+      });
+    } else {
+      slide.addText('레이더 차트 데이터가 없습니다.', {
+        x: MARGIN, y: 1.3, w: SLIDE_W - MARGIN * 2, h: 0.5,
+        fontSize: 12, fontFace: FONT, color: PPTX_COLORS.muted,
+      });
+    }
   }
 }
 
