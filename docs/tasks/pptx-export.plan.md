@@ -17,60 +17,60 @@
 
 ## Phase B — pptxgenjs 도입 + 핵심 인프라
 
-- [ ] `pptxgenjs` 의존성 추가 (`npm install pptxgenjs`)
-- [ ] `src/lib/pptx-export.ts` 신설
-  - [ ] `buildCompanyPptx(data: CompanyFinancialData): Promise<Blob>` 시그니처
-  - [ ] `downloadCompanyPptx(data: CompanyFinancialData): Promise<void>` (Blob → 다운로드)
-  - [ ] 색상 토큰 (COLOR_PALETTE 재사용, hex 변환 헬퍼)
-  - [ ] 슬라이드 마스터: 좌상단 제목·우상단 회사명·하단 페이지 번호
-- [ ] 단순 표지 슬라이드 1장만 생성하는 단계로 첫 동작 확인
-- [ ] lint·build 통과
-- [ ] 커밋
+- [x] `pptxgenjs` 의존성 추가 (`npm install pptxgenjs`)
+- [x] `src/lib/pptx-export.ts` 신설
+  - [x] `buildCompanyPptx(data: CompanyFinancialData): Promise<Blob>` 시그니처
+  - [x] `downloadCompanyPptx(data: CompanyFinancialData): Promise<void>` (Blob → 다운로드)
+  - [x] 색상 토큰 (COLOR_PALETTE 재사용, hex 변환 헬퍼)
+  - [x] 슬라이드 마스터: 좌상단 제목·우상단 회사명·하단 페이지 번호
+- [x] 단순 표지 슬라이드 1장만 생성하는 단계로 첫 동작 확인
+- [x] lint·build 통과
+- [x] 커밋
 
 ---
 
 ## Phase C — 텍스트·표 슬라이드
 
-- [ ] 표지 슬라이드 마무리 (회사명·업종·연도·생성일)
-- [ ] 요약 슬라이드 (메트릭 6장 + F-Score 점수·부실 신호 라벨·위험 신호 카운트)
-- [ ] 인사이트 텍스트 슬라이드 골격 (BS/IS/CF 인사이트 텍스트 출력)
-- [ ] 결론 슬라이드 (강점·약점·전략 추천 불릿)
-- [ ] 가치평가 슬라이드 (보수/기본/낙관 시나리오 표)
-- [ ] lint·build 통과
-- [ ] 커밋
+- [x] 표지 슬라이드 마무리 (회사명·업종·연도·생성일)
+- [x] 요약 슬라이드 (메트릭 6장 + F-Score 점수·부실 신호 라벨·위험 신호 카운트)
+- [x] 인사이트 텍스트 슬라이드 골격 (BS/IS/CF 인사이트 텍스트 출력)
+- [x] 결론 슬라이드 (강점·약점·전략 추천 불릿)
+- [ ] ~~가치평가 슬라이드 (보수/기본/낙관 시나리오 표)~~ — 후속(데이터 모델에 valuation 결과 별도 보관 필요)
+- [x] lint·build 통과
+- [x] 커밋
 
 ---
 
 ## Phase D — 차트 슬라이드 (pptxgenjs native)
 
-- [ ] LINE 차트 헬퍼 (시계열 데이터셋 N개 → pptxgenjs ChartType.line)
-- [ ] BAR 차트 헬퍼
-- [ ] RADAR 차트 헬퍼 (작동 여부 확인 → 안 되면 표 대체)
-- [ ] 슬라이드 매핑:
-  - [ ] 손익계산서 (LINE × 2)
-  - [ ] 재무상태표 (BAR)
-  - [ ] 성장성 (LINE)
-  - [ ] 수익성 (LINE)
-  - [ ] 안정성 (LINE)
-  - [ ] 현금흐름 (BAR)
-  - [ ] 운전자본 (BAR)
-  - [ ] 업계비교 (RADAR or 표)
-  - [ ] 가치평가 (BAR — 3 시나리오)
-- [ ] lint·build 통과
-- [ ] 커밋
+- [x] LINE 차트 헬퍼 (시계열 데이터셋 N개 → pptxgenjs ChartType.line)
+- [x] BAR 차트 헬퍼
+- [x] RADAR 차트 헬퍼 (작동 여부 확인 → 안 되면 표 대체)
+- [x] 슬라이드 매핑:
+  - [x] 손익계산서 (LINE × 2)
+  - [x] 재무상태표 (BAR)
+  - [x] 성장성 (LINE)
+  - [x] 수익성 (LINE)
+  - [x] 안정성 (LINE)
+  - [x] 현금흐름 (BAR)
+  - [x] 운전자본 (BAR)
+  - [x] 업계비교 (RADAR or 표)
+  - [ ] ~~가치평가 (BAR — 3 시나리오)~~ — 후속
+- [x] lint·build 통과
+- [x] 커밋
 
 ---
 
 ## Phase E — UI 통합 + 검증
 
-- [ ] `src/components/layout/Header.tsx` 에 PPTX 버튼 추가
-- [ ] selectedCompany 기준 활성화 (CSV 버튼과 동일 패턴)
-- [ ] 로딩 표시 처리
-- [ ] 실데이터 1개로 다운로드 테스트 (수동)
-- [ ] PowerPoint·Keynote 양쪽에서 열기 확인 (수동)
-- [ ] 한글 깨짐·차트 색상·페이지 번호 검증
-- [ ] lint·build 통과
-- [ ] 커밋
+- [x] `src/components/layout/Header.tsx` 에 PPTX 버튼 추가
+- [x] companyData 기준 활성화 (CSV 버튼과 동일 패턴)
+- [x] 로딩 표시 처리 (`isExportingPptx`)
+- [ ] 실데이터 1개로 다운로드 테스트 (수동) — 사용자 검증 대기
+- [ ] PowerPoint·Keynote 양쪽에서 열기 확인 (수동) — 사용자 검증 대기
+- [ ] 한글 깨짐·차트 색상·페이지 번호 검증 — 사용자 검증 대기
+- [x] lint·build 통과 + 32 vitest 그린
+- [x] 커밋
 
 ---
 

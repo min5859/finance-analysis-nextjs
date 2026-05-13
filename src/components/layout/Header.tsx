@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useCompanyStore } from '@/store/company-store';
 import { downloadPdf, downloadFullReportPdf } from '@/lib/pdf-generator';
 import { downloadCompanyCsv } from '@/lib/csv-export';
+import { downloadCompanyPptx } from '@/lib/pptx-export';
 import FullReportContent from '@/components/pdf/FullReportContent';
 import { COLOR_PALETTE } from '@/components/charts/chartConfig';
 
@@ -15,6 +16,7 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
   const [isFullReport, setIsFullReport] = useState(false);
   const [progress, setProgress] = useState('');
   const [isSharing, setIsSharing] = useState(false);
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
   const fullReportRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
@@ -31,6 +33,18 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
   const handleDownloadCsv = useCallback(() => {
     if (!companyData) return;
     downloadCompanyCsv(companyData);
+  }, [companyData]);
+
+  const handleDownloadPptx = useCallback(async () => {
+    if (!companyData) return;
+    setIsExportingPptx(true);
+    try {
+      await downloadCompanyPptx(companyData);
+    } catch (err) {
+      window.alert(`PPTX 생성 실패: ${(err as Error).message}`);
+    } finally {
+      setIsExportingPptx(false);
+    }
   }, [companyData]);
 
   const handleCreateShareLink = useCallback(async () => {
@@ -136,6 +150,14 @@ export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) 
               title="원본 재무 수치를 CSV(엑셀 호환)로 내보냅니다."
             >
               CSV
+            </button>
+            <button
+              onClick={handleDownloadPptx}
+              disabled={isGenerating || isExportingPptx}
+              className="text-sm text-white border border-white/50 px-4 py-1.5 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+              title="PowerPoint에서 그대로 편집 가능한 PPTX 파일을 생성합니다."
+            >
+              {isExportingPptx ? '생성 중...' : 'PPTX'}
             </button>
             <button
               onClick={handleCreateShareLink}
