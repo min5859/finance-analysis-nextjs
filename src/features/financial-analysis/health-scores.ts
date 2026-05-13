@@ -24,8 +24,18 @@ export interface DistressResult {
   signals: DistressSignal[];
 }
 
-const last = (arr?: number[]) => (arr && arr.length > 0 ? arr[arr.length - 1] : undefined);
-const prev = (arr?: number[]) => (arr && arr.length >= 2 ? arr[arr.length - 2] : undefined);
+/**
+ * 타입은 number[] 이지만 raw JSON 에 null 이 섞여 들어올 수 있다 (data-loader 를
+ * 거치지 않는 경로 — 예: PPTX export). null/NaN/Infinity 도 undefined 로 반환해서
+ * 호출부의 `!== undefined` 체크 한 줄로 안전.
+ */
+const safeAt = (arr: number[] | undefined, idx: number): number | undefined => {
+  if (!arr || idx < 0 || idx >= arr.length) return undefined;
+  const v = arr[idx];
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+};
+const last = (arr?: number[]) => (arr ? safeAt(arr, arr.length - 1) : undefined);
+const prev = (arr?: number[]) => (arr ? safeAt(arr, arr.length - 2) : undefined);
 
 /**
  * Piotroski F-Score 변형.
@@ -146,12 +156,17 @@ export function detectDistressSignals(data: CompanyFinancialData): DistressResul
   const ni = data.performance_data?.순이익 ?? [];
   const matchLen = Math.min(cf.length, ni.length);
   if (matchLen >= 3) {
-    const tail = matchLen >= 3 ? 3 : matchLen;
+    const tail = 3;
     let streak = 0;
+    let valid = 0;
     for (let i = matchLen - tail; i < matchLen; i++) {
-      if (cf[i] < ni[i]) streak++;
+      const a = safeAt(cf, i);
+      const b = safeAt(ni, i);
+      if (a === undefined || b === undefined) continue;
+      valid++;
+      if (a < b) streak++;
     }
-    if (streak === tail)
+    if (valid === tail && streak === tail)
       signals.push({
         label: '이익의 질 의심',
         level: 'watch',

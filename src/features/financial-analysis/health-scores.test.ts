@@ -52,6 +52,17 @@ describe('calculatePiotroskiFScore', () => {
   });
 });
 
+describe('null-safe input', () => {
+  it('does not throw when arrays contain null values (raw JSON path)', () => {
+    const d = base();
+    // raw JSON 에 null 이 섞인 상황 (PPTX 등 DataLoader 우회 경로)
+    (d.stability_data.부채비율 as unknown as (number | null)[])[1] = null;
+    (d.profitability_data.ROA as unknown as (number | null)[])[0] = null;
+    expect(() => calculatePiotroskiFScore(d)).not.toThrow();
+    expect(() => detectDistressSignals(d)).not.toThrow();
+  });
+});
+
 describe('detectDistressSignals', () => {
   it('marks healthy company as safe', () => {
     const r = detectDistressSignals(base());

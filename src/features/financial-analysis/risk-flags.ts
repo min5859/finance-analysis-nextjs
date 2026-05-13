@@ -11,9 +11,15 @@ export interface RiskFlag {
   detail: string;
 }
 
-const last = (arr?: number[]) => (arr && arr.length > 0 ? arr[arr.length - 1] : undefined);
-const prev = (arr?: number[]) => (arr && arr.length >= 2 ? arr[arr.length - 2] : undefined);
-const prev2 = (arr?: number[]) => (arr && arr.length >= 3 ? arr[arr.length - 3] : undefined);
+/** 타입은 number[] 이지만 raw JSON 에 null 이 섞일 수 있어 null-safe 인덱싱. */
+const safeAt = (arr: number[] | undefined, idx: number): number | undefined => {
+  if (!arr || idx < 0 || idx >= arr.length) return undefined;
+  const v = arr[idx];
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+};
+const last = (arr?: number[]) => (arr ? safeAt(arr, arr.length - 1) : undefined);
+const prev = (arr?: number[]) => (arr ? safeAt(arr, arr.length - 2) : undefined);
+const prev2 = (arr?: number[]) => (arr ? safeAt(arr, arr.length - 3) : undefined);
 
 type Rule = (data: CompanyFinancialData) => RiskFlag | null;
 

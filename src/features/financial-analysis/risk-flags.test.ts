@@ -32,6 +32,13 @@ describe('detectRiskFlags', () => {
     expect(detectRiskFlags(base())).toEqual([]);
   });
 
+  it('does not throw when arrays contain null values', () => {
+    const d = base();
+    (d.stability_data.부채비율 as unknown as (number | null)[])[0] = null;
+    (d.performance_data.매출액 as unknown as (number | null)[])[1] = null;
+    expect(() => detectRiskFlags(d)).not.toThrow();
+  });
+
   it('flags op loss as critical', () => {
     const d = base();
     d.performance_data.영업이익 = [10, 5, -3];
