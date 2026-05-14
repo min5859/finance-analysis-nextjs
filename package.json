@@ -5,7 +5,8 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "next build",
+    "migrate:prod-only": "if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi",
+    "build": "npm run migrate:prod-only && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
