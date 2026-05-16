@@ -34,6 +34,20 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     loadCompanyList();
   }, [loadCompanyList]);
 
+  const handleDownloadJson = () => {
+    if (!companyData) return;
+    const json = JSON.stringify(companyData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedCompany ?? companyData.company_name}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDelete = async () => {
     if (!selectedCompany || !companyData) return;
     const expected = companyData.company_name;
@@ -120,15 +134,25 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <p className="text-xs text-emerald-600">
               {companyData.company_name} 데이터 로드됨
             </p>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={isDeleting || !selectedCompany}
-              title="선택한 회사 삭제"
-              className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-1"
-            >
-              {isDeleting ? '삭제중...' : '🗑️'}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleDownloadJson}
+                title="JSON 데이터 다운로드"
+                className="text-xs text-gray-400 hover:text-indigo-600 px-1"
+              >
+                ⬇️
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || !selectedCompany}
+                title="선택한 회사 삭제"
+                className="text-xs text-gray-400 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-1"
+              >
+                {isDeleting ? '삭제중...' : '🗑️'}
+              </button>
+            </div>
           </div>
         )}
       </div>
